@@ -1,0 +1,20 @@
+{
+  "rules": [
+    {"id": "HEART_R1", "conditions": {"chest_pain": true, "short_breath": true, "high_bp": true}, "conclusion": "Nghi ngờ Nhồi máu cơ tim", "cf": 0.95},
+    {"id": "HEART_R2", "conditions": {"high_cholesterol": true, "old_age": true}, "conclusion": "Nguy cơ Xơ vữa động mạch", "cf": 0.85},
+    {"id": "HEART_R3", "conditions": {"high_bp": true}, "conclusion": "Cao huyết áp", "cf": 0.7},
+    {"id": "HEART_R4", "conditions": {"high_cholesterol": true}, "conclusion": "Rối loạn mỡ máu", "cf": 0.6},
+    
+    {"id": "DIAB_R1", "conditions": {"high_glucose": true, "high_bmi": true, "old_age": true}, "conclusion": "Tiểu đường type 2", "cf": 0.9},
+    {"id": "DIAB_R2", "conditions": {"high_glucose": true, "high_bmi": true}, "conclusion": "Tiền tiểu đường / Kháng insulin", "cf": 0.75},
+    {"id": "DIAB_R3", "conditions": {"high_bmi": true}, "conclusion": "Thừa cân - Béo phì", "cf": 0.6},
+    
+    {"id": "LIVER_R1", "conditions": {"high_bilirubin": true, "low_albumin": true}, "conclusion": "Suy gan / Xơ gan", "cf": 0.9},
+    {"id": "LIVER_R2", "conditions": {"high_bilirubin": true}, "conclusion": "Vàng da / Rối loạn chuyển hóa bilirubin", "cf": 0.7},
+    {"id": "LIVER_R3", "conditions": {"low_albumin": true}, "conclusion": "Suy dinh dưỡng / Giảm chức năng gan", "cf": 0.55},
+    
+    {"id": "KIDNEY_R1", "conditions": {"high_creatinine": true, "high_bp": true}, "conclusion": "Suy thận / Tăng huyết áp do thận", "cf": 0.9},
+    {"id": "KIDNEY_R2", "conditions": {"high_creatinine": true}, "conclusion": "Rối loạn chức năng thận", "cf": 0.75},
+    {"id": "KIDNEY_R3", "conditions": {"high_bp": true}, "conclusion": "Tăng huyết áp", "cf": 0.55}
+  ]
+}
