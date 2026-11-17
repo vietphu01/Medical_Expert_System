@@ -83,6 +83,9 @@ def validate_diagnosis_fields(data, disease):
             if key not in values or (isinstance(value, str) and not value.strip()):
                 errors[path] = f'Vui lòng nhập {label}.'
                 continue
+            if value is None:
+                inputs[key] = None
+                continue
             if type(value) not in (int, float, str):
                 errors[path] = f'{label} phải là số.'
                 continue

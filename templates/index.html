@@ -42,14 +42,14 @@
                         <div class="spinner-border text-primary"></div><p class="mt-2">Đang suy diễn...</p>
                     </div>
                     <div id="resultSection" class="d-none">
-                        <h5>Điểm hỗ trợ ML (<span id="mlModel"></span>): <span id="mlProb" class="badge bg-danger fs-6"></span></h5>
-                        <canvas id="probChart" height="70"></canvas>
-                        <hr>
-                        <h5>🌫️ Chỉ số Logic Mờ:</h5>
-                        <div id="fuzzyBars"></div>
-                        <hr>
-                        <h5>🧠 Kết quả luật:</h5>
-                        <ul id="expertList" class="list-group"></ul>
+                        <h5>1. Chỉ số gốc</h5>
+                        <ul id="traceInputs" class="list-group mb-3"></ul>
+                        <h5>2. Fact từ chỉ số gốc</h5>
+                        <ul id="traceFacts" class="list-group mb-3"></ul>
+                        <h5>3. Luật đã khớp</h5>
+                        <ul id="traceRules" class="list-group mb-3"></ul>
+                        <h5>4. Kết quả hỗ trợ</h5>
+                        <div id="traceResult" role="status"></div>
                     </div>
                 </div>
             </div>
@@ -90,7 +90,7 @@
     <script>
         let currentDisease = 'heart';
         let DISEASES = {};
-        let probChart, modelChart;
+        let modelChart;
 
         // ===== LOAD DISEASES =====
         async function loadDiseases() {
@@ -126,15 +126,18 @@
             const d = DISEASES[currentDisease];
             document.getElementById('formTitle').innerText = `${d.icon} ${d.name}`;
             const form = document.getElementById('diagnosisForm');
-            form.innerHTML = '';
+            form.innerHTML = '<p class="text-muted">Để trống chỉ số chưa biết; ML dùng giá trị điền từ tập huấn luyện, luật giữ trạng thái chưa biết.</p>';
             d.fields.forEach(f => {
                 form.innerHTML += `
                     <div class="mb-2">
                         <label class="form-label" for="field_${f.key}">${f.label}</label>
                         <input type="number" class="form-control" id="field_${f.key}" name="inputs.${f.key}"
-                            min="${f.min}" max="${f.max}" value="${f.default}" step="${f.step || 1}" required>
+                            min="${f.min}" max="${f.max}" value="${f.default}" step="${f.step || 1}">
                     </div>`;
             });
+            if (Object.keys(d.symptoms || {}).length) {
+                form.insertAdjacentHTML('beforeend', '<p class="text-muted">Triệu chứng dưới đây hiện chưa tham gia các luật đích.</p>');
+            }
             Object.entries(d.symptoms || {}).forEach(([key, label]) => {
                 form.innerHTML += `
                     <div class="mb-2">
@@ -188,7 +191,10 @@
             const disease = currentDisease;
             const d = DISEASES[disease];
             const inputs = {};
-            d.fields.forEach(f => inputs[f.key] = form.elements.namedItem(`inputs.${f.key}`).value);
+            d.fields.forEach(f => {
+                const value = form.elements.namedItem(`inputs.${f.key}`).value;
+                inputs[f.key] = value.trim() === '' ? null : value;
+            });
             const extra_facts = {};
             Object.keys(d.symptoms || {}).forEach(key => {
                 extra_facts[key] = form.elements.namedItem(`extra_facts.${key}`).value === 'true';
@@ -226,44 +232,50 @@
             }
             document.getElementById('resultSection').classList.remove('d-none');
             
-            // ML Prob + Chart
-            document.getElementById('mlProb').innerText = data.ml_probability + '%';
-            document.getElementById('mlModel').textContent = data.ml_model;
-            document.getElementById('mlProb').className = 'badge fs-6 ' + 
-                (data.ml_probability > 70 ? 'bg-danger' : data.ml_probability > 40 ? 'bg-warning text-dark' : 'bg-success');
-            
-            if (probChart) probChart.destroy();
-            probChart = new Chart(document.getElementById('probChart'), {
-                type: 'bar',
-                data: { labels: ['Điểm hỗ trợ ML (%)'], datasets: [{
-                    data: [data.ml_probability],
-                    backgroundColor: data.ml_probability > 70 ? '#dc3545' : data.ml_probability > 40 ? '#ffc107' : '#198754'
-                }]},
-                options: { plugins: { legend: { display: false } }, scales: { y: { max: 100, beginAtZero: true } } }
-            });
-            
-            // Fuzzy bars
-            const fb = document.getElementById('fuzzyBars');
-            fb.innerHTML = '';
-            Object.entries(data.fuzzy_values).forEach(([k, v]) => {
-                fb.innerHTML += `
-                    <div class="mb-2"><small><strong>${k}</strong>: ${v}%</small>
-                    <div class="progress" style="height: 18px">
-                        <div class="progress-bar ${v > 70 ? 'bg-danger' : v > 40 ? 'bg-warning' : 'bg-success'}" style="width:${v}%"></div>
-                    </div></div>`;
-            });
-            
-            // Expert conclusions
-            const el = document.getElementById('expertList');
-            el.innerHTML = '';
-            data.expert_conclusions.forEach(t => {
-                const li = document.createElement('li');
-                li.className = 'list-group-item list-group-item-info';
-                li.innerHTML = t;
-                el.appendChild(li);
-            });
-            
+            renderTrace(data.trace, d);
+
             loadHistory();
+        }
+
+        function appendTraceItem(list, text) {
+            const item = document.createElement('li');
+            item.className = 'list-group-item';
+            item.textContent = text;
+            list.appendChild(item);
+        }
+
+        function renderTrace(trace, disease) {
+            const inputs = document.getElementById('traceInputs');
+            const facts = document.getElementById('traceFacts');
+            const rules = document.getElementById('traceRules');
+            const result = document.getElementById('traceResult');
+            inputs.replaceChildren(); facts.replaceChildren(); rules.replaceChildren(); result.replaceChildren();
+            const valueText = value => value === null ? 'Chưa biết' : String(value);
+            const percent = value => value === null ? 'Chưa có' : `${(value * 100).toFixed(1)}%`;
+            disease.fields.forEach(field => {
+                const fact = trace.facts.find(item => item.feature === field.key);
+                appendTraceItem(inputs, `${field.label}: ${valueText(fact ? fact.value : null)}`);
+            });
+            const derived = trace.facts.filter(fact => fact.key !== null);
+            if (!derived.length) appendTraceItem(facts, 'Chưa có fact được định nghĩa cho nhóm này.');
+            derived.forEach(fact => {
+                const state = fact.value_boolean === null ? 'Chưa biết' : (fact.value_boolean ? 'Đúng' : 'Sai');
+                appendTraceItem(facts, `${fact.feature} → ${fact.key}: ${state}; mức liên thuộc ${percent(fact.membership)}`);
+            });
+            if (!trace.fired_rules.length) appendTraceItem(rules, 'Không có luật nào khớp.');
+            trace.fired_rules.forEach(rule => appendTraceItem(
+                rules, `${rule.id}: ${rule.conditions.join(' và ')} → ${rule.conclusion}; CF ${percent(rule.cf)}; ${rule.used_in_fusion ? 'dùng trong gộp' : 'luật phụ'}`
+            ));
+            const lines = [
+                `Đích dữ liệu: ${trace.target}`,
+                `ML (${trace.ml.model}): ${percent(trace.ml.score)}`,
+                trace.result.rule_status === 'no_matching_target_rule'
+                    ? 'Không có luật đích nào khớp với dữ kiện đã nhập.'
+                    : `Điểm hỗ trợ luật: ${percent(trace.result.rule_score)}`,
+                `Điểm hỗ trợ kết hợp: ${percent(trace.result.combined_score)}`,
+                `Nhãn dự đoán: ${trace.result.predicted_label}`,
+            ];
+            lines.forEach(text => { const p = document.createElement('p'); p.textContent = text; result.appendChild(p); });
         }
 
         // ===== SO SÁNH MODEL =====

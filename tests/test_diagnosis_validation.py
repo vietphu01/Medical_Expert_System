@@ -174,7 +174,7 @@ class DiagnosisValidationTests(unittest.TestCase):
         for disease, config in DISEASES.items():
             for field in config['fields']:
                 key = field['key']
-                values = [True, False, None, [], {}, '', 'not a number',
+                values = [True, False, [], {}, '', 'not a number',
                           'NaN', 'Infinity', '-Infinity', float('nan'),
                           float('inf'), float('-inf'), field['min'] - 0.1,
                           field['max'] + 0.1]
@@ -185,6 +185,19 @@ class DiagnosisValidationTests(unittest.TestCase):
                         payload = self.payload(disease)
                         payload['inputs'][key] = value
                         self.assert_invalid('inputs.' + key, payload=payload)
+
+    def test_explicit_null_preserves_unknown_facts_and_reaches_model(self):
+        for disease, dataset in self.module.DATASET_BY_DISEASE.items():
+            with self.subTest(disease=disease):
+                payload = self.payload(disease)
+                payload['inputs'] = dict.fromkeys(payload['inputs'], None)
+                response = self.client.post('/api/diagnose', json=payload)
+                self.assertEqual(response.status_code, 200)
+                self.module.MODELS[dataset].score.assert_called_with(payload['inputs'])
+                trace = response.get_json()['trace']
+                self.assertTrue(all(f['value'] is None and f['membership'] is None
+                                    and f['value_boolean'] is None for f in trace['facts']))
+                self.assertEqual(trace['result']['rule_status'], 'no_matching_target_rule')
 
     def test_range_endpoints_are_accepted(self):
         for disease, config in DISEASES.items():
