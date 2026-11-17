@@ -1,5 +1,6 @@
 import os
 from contextlib import closing
+from math import isfinite
 
 from flask import Flask, render_template, request, jsonify
 import numpy as np, sqlite3
@@ -88,24 +89,84 @@ def home(): return render_template('index.html')
 
 @app.route('/api/diseases')
 def list_diseases():
-    return jsonify({k: {kk: vv for kk, vv in v.items() if kk in ['name', 'icon', 'fields']} 
+    return jsonify({k: {kk: vv for kk, vv in v.items() if kk in ['name', 'icon', 'fields', 'symptoms']}
                     for k, v in DISEASES.items()})
 
 @app.route('/api/model_stats/<dkey>')
 def model_stats(dkey):
+    if dkey not in DISEASES:
+        return jsonify(errors={'disease': 'Nhóm bệnh không được hỗ trợ.'}), 404
     return jsonify({
         "stats": MODEL_STATS[dkey],
         "tree_rules": TREE_RULES[dkey]
     })
 
+def validate_diagnosis_fields(data, disease):
+    errors = {
+        f'body.{key}': f'Trường {key} không được hỗ trợ.'
+        for key in data.keys() - {'disease', 'inputs', 'extra_facts'}
+    }
+    values = data.get('inputs')
+    inputs = {}
+    if not isinstance(values, dict):
+        errors['inputs'] = 'Cần gửi các chỉ số trong một đối tượng JSON.'
+    else:
+        fields = {field['key']: field for field in disease['fields']}
+        for key in values.keys() - fields.keys():
+            errors[f'inputs.{key}'] = f'Chỉ số {key} không được hỗ trợ cho nhóm bệnh này.'
+
+        for key, field in fields.items():
+            path = f'inputs.{key}'
+            label = field['label']
+            value = values.get(key)
+            if key not in values or (isinstance(value, str) and not value.strip()):
+                errors[path] = f'Vui lòng nhập {label}.'
+                continue
+            if type(value) not in (int, float, str):
+                errors[path] = f'{label} phải là số.'
+                continue
+            try:
+                number = float(value)
+            except (ValueError, OverflowError):
+                errors[path] = f'{label} phải là số hữu hạn.'
+                continue
+            minimum, maximum = field['min'], field['max']
+            if not isfinite(number):
+                errors[path] = f'{label} phải là số hữu hạn.'
+            elif not minimum <= number <= maximum:
+                errors[path] = f'{label} phải nằm trong khoảng {minimum} đến {maximum}.'
+            elif key == 'age' and not number.is_integer():
+                errors[path] = f'{label} phải là số nguyên.'
+            else:
+                inputs[key] = number
+
+    symptoms = data.get('extra_facts', {})
+    if not isinstance(symptoms, dict):
+        errors['extra_facts'] = 'Cần gửi các triệu chứng trong một đối tượng JSON.'
+    else:
+        allowed = disease.get('symptoms', {})
+        for key, value in symptoms.items():
+            path = f'extra_facts.{key}'
+            if key not in allowed:
+                errors[path] = f'Triệu chứng {key} không được hỗ trợ cho nhóm bệnh này.'
+            elif not isinstance(value, bool):
+                errors[path] = f'{allowed[key]} Chọn Có hoặc Không.'
+
+    return inputs, symptoms, errors
+
 @app.route('/api/diagnose', methods=['POST'])
 def diagnose():
-    data = request.json
-    dkey = data['disease']
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify(errors={'body': 'Cần gửi nội dung là một đối tượng JSON hợp lệ.'}), 400
+    dkey = data.get('disease')
+    if not isinstance(dkey, str) or dkey not in DISEASES:
+        return jsonify(errors={'disease': 'Chọn một nhóm bệnh được hỗ trợ.'}), 400
     dcfg = DISEASES[dkey]
-    
-    # 1. Lấy input (ép kiểu float)
-    inputs = {f['key']: float(data['inputs'][f['key']]) for f in dcfg['fields']}
+
+    inputs, symptoms, errors = validate_diagnosis_fields(data, dcfg)
+    if errors:
+        return jsonify(errors=errors), 400
     X_input = np.array([[inputs[k] for k in dcfg['feature_names']]])
     
     # 2. Chạy Ensemble Voting (mô hình mạnh nhất) để dự đoán
@@ -117,8 +178,7 @@ def diagnose():
     fuzzy_values, fuzzy_facts = compute_fuzzy_facts(dcfg, inputs)
     
     # 4. Thêm facts từ triệu chứng lâm sàng (nếu user nhập)
-    extra_facts = data.get('extra_facts', {})
-    facts = {**fuzzy_facts, **extra_facts, "old_age": inputs['age'] >= 50}
+    facts = {**symptoms, **fuzzy_facts, "old_age": inputs['age'] >= 50}
     
     # 5. Suy diễn chuyên gia
     conclusions, fired = engine.forward_chaining(dcfg["rule_file_prefix"], facts, ml_prob)

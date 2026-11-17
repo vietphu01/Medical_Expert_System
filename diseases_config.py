@@ -8,6 +8,7 @@ DISEASES = {
             {"key": "bp",   "label": "Huyết áp (mmHg)", "min": 90, "max": 200, "default": 130},
             {"key": "chol", "label": "Cholesterol (mg/dL)", "min": 150, "max": 400, "default": 240}
         ],
+        "symptoms": {"chest_pain": "Đau ngực?", "short_breath": "Khó thở?"},
         "feature_names": ["age", "bp", "chol"],
         "fuzzy": [
             {"feature": "bp",   "low": 120, "high": 160, "dir": "asc"},

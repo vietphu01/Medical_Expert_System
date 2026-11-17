@@ -27,7 +27,7 @@
             <div class="card">
                 <div class="card-header bg-primary text-white"><strong id="formTitle">Nhập thông tin</strong></div>
                 <div class="card-body">
-                    <form id="diagnosisForm"></form>
+                    <form id="diagnosisForm" novalidate></form>
                 </div>
             </div>
         </div>
@@ -116,6 +116,7 @@
             renderForm();
             loadModelStats();
             document.getElementById('resultSection').classList.add('d-none');
+            document.getElementById('loading').classList.add('d-none');
             document.getElementById('emptyState').classList.remove('d-none');
         }
 
@@ -128,46 +129,100 @@
             d.fields.forEach(f => {
                 form.innerHTML += `
                     <div class="mb-2">
-                        <label class="form-label">${f.label}</label>
-                        <input type="number" class="form-control" id="field_${f.key}" 
+                        <label class="form-label" for="field_${f.key}">${f.label}</label>
+                        <input type="number" class="form-control" id="field_${f.key}" name="inputs.${f.key}"
                             min="${f.min}" max="${f.max}" value="${f.default}" step="${f.step || 1}" required>
                     </div>`;
             });
-            // Triệu chứng lâm sàng (riêng tim mạch)
-            if (currentDisease === 'heart') {
+            Object.entries(d.symptoms || {}).forEach(([key, label]) => {
                 form.innerHTML += `
-                    <div class="mb-2"><label class="form-label">Đau ngực?</label>
-                        <select class="form-select" id="extra_chest_pain"><option value="false">Không</option><option value="true">Có</option></select></div>
-                    <div class="mb-2"><label class="form-label">Khó thở?</label>
-                        <select class="form-select" id="extra_short_breath"><option value="false">Không</option><option value="true">Có</option></select></div>`;
-            }
-            form.innerHTML += `<button type="submit" class="btn btn-success w-100 mt-2">🔬 Chạy Chẩn Đoán</button>`;
+                    <div class="mb-2">
+                        <label class="form-label" for="extra_${key}">${label}</label>
+                        <select class="form-select" id="extra_${key}" name="extra_facts.${key}">
+                            <option value="false">Không</option><option value="true">Có</option>
+                        </select>
+                    </div>`;
+            });
+            form.innerHTML += `
+                <ul id="diagnosisErrors" class="alert alert-danger d-none list-unstyled mb-2" role="alert"></ul>
+                <button type="submit" class="btn btn-success w-100 mt-2">🔬 Chạy Chẩn Đoán</button>`;
             form.onsubmit = runDiagnosis;
+        }
+
+        function clearDiagnosisErrors(form) {
+            const list = form.querySelector('#diagnosisErrors');
+            list.replaceChildren();
+            list.classList.add('d-none');
+            form.querySelectorAll('.is-invalid').forEach(input => {
+                input.classList.remove('is-invalid');
+                input.removeAttribute('aria-invalid');
+                input.removeAttribute('aria-describedby');
+            });
+        }
+
+        function showDiagnosisErrors(form, errors) {
+            const list = form.querySelector('#diagnosisErrors');
+            Object.entries(errors).forEach(([field, message]) => {
+                const item = document.createElement('li');
+                item.textContent = message;
+                list.appendChild(item);
+
+                const input = form.elements.namedItem(field);
+                if (input) {
+                    input.classList.add('is-invalid');
+                    input.setAttribute('aria-invalid', 'true');
+                    input.setAttribute('aria-describedby', list.id);
+                }
+            });
+            list.classList.remove('d-none');
+            document.getElementById('emptyState').classList.remove('d-none');
         }
 
         // ===== CHẨN ĐOÁN =====
         async function runDiagnosis(e) {
             e.preventDefault();
-            const d = DISEASES[currentDisease];
+            const form = e.currentTarget;
+            const submitButton = form.querySelector('button[type="submit"]');
+            if (submitButton.disabled) return;
+            const disease = currentDisease;
+            const d = DISEASES[disease];
             const inputs = {};
-            d.fields.forEach(f => inputs[f.key] = document.getElementById(`field_${f.key}`).value);
+            d.fields.forEach(f => inputs[f.key] = form.elements.namedItem(`inputs.${f.key}`).value);
             const extra_facts = {};
-            if (currentDisease === 'heart') {
-                extra_facts.chest_pain = document.getElementById('extra_chest_pain').value === 'true';
-                extra_facts.short_breath = document.getElementById('extra_short_breath').value === 'true';
-            }
-            
+            Object.keys(d.symptoms || {}).forEach(key => {
+                extra_facts[key] = form.elements.namedItem(`extra_facts.${key}`).value === 'true';
+            });
+
+            clearDiagnosisErrors(form);
+            submitButton.disabled = true;
+            document.getElementById('emptyState').classList.add('d-none');
             document.getElementById('loading').classList.remove('d-none');
             document.getElementById('resultSection').classList.add('d-none');
-            
-            const res = await fetch('/api/diagnose', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ disease: currentDisease, inputs, extra_facts })
-            });
-            const data = await res.json();
-            
+
+            let data, errors;
+            try {
+                const res = await fetch('/api/diagnose', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ disease, inputs, extra_facts })
+                });
+                data = await res.json();
+                if (!res.ok) {
+                    errors = data?.errors || {body: 'Không thể xử lý yêu cầu chẩn đoán.'};
+                }
+            } catch {
+                errors = {body: 'Không nhận được phản hồi hợp lệ. Vui lòng thử lại.'};
+            }
+
+            if (!form.contains(submitButton)) {
+                if (!errors) loadHistory();
+                return;
+            }
+            submitButton.disabled = false;
             document.getElementById('loading').classList.add('d-none');
-            document.getElementById('emptyState').classList.add('d-none');
+            if (errors) {
+                showDiagnosisErrors(form, errors);
+                return;
+            }
             document.getElementById('resultSection').classList.remove('d-none');
             
             // ML Prob + Chart
