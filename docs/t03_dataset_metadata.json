@@ -1,0 +1,158 @@
+{
+  "cleveland": {
+    "dataset": "cleveland",
+    "source": {
+      "record_url": "https://archive.ics.uci.edu/dataset/45/heart+disease",
+      "doi": "10.24432/C52P4X",
+      "release": "UCI Heart Disease #45, processed Cleveland subset (citation year 1989)",
+      "download_url": "https://archive.ics.uci.edu/static/public/45/heart+disease.zip",
+      "archive_member": "processed.cleveland.data",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "terms_status": "verified",
+      "verified_sha256": "a74b7efa387bc9d108d7d0115d831fe9b414b29ae7124f331b622b4efa0427c8",
+      "sha256": "a74b7efa387bc9d108d7d0115d831fe9b414b29ae7124f331b622b4efa0427c8",
+      "matches_verified_release": true
+    },
+    "source_columns": [
+      "age",
+      "sex",
+      "cp",
+      "trestbps",
+      "chol",
+      "fbs",
+      "restecg",
+      "thalach",
+      "exang",
+      "oldpeak",
+      "slope",
+      "ca",
+      "thal",
+      "num"
+    ],
+    "feature_order": [
+      "age",
+      "bp",
+      "chol"
+    ],
+    "feature_sources": {
+      "age": "age",
+      "bp": "trestbps",
+      "chol": "chol"
+    },
+    "feature_units": {
+      "age": "years",
+      "bp": "mmHg",
+      "chol": "mg/dL"
+    },
+    "raw_rows": 303,
+    "n_samples": 303,
+    "duplicate_rows": 0,
+    "raw_label_counts": {
+      "0": 164,
+      "1": 55,
+      "2": 36,
+      "3": 35,
+      "4": 13
+    },
+    "label_counts": {
+      "0": 164,
+      "1": 139
+    },
+    "source_missing_by_column": {
+      "age": 0,
+      "sex": 0,
+      "cp": 0,
+      "trestbps": 0,
+      "chol": 0,
+      "fbs": 0,
+      "restecg": 0,
+      "thalach": 0,
+      "exang": 0,
+      "oldpeak": 0,
+      "slope": 0,
+      "ca": 4,
+      "thal": 2,
+      "num": 0
+    },
+    "zero_sentinel_by_column": {},
+    "missing_by_feature": {
+      "age": 0,
+      "bp": 0,
+      "chol": 0
+    }
+  },
+  "pima": {
+    "dataset": "pima",
+    "source": {
+      "record_url": "https://www.openml.org/d/37",
+      "metadata_url": "https://www.openml.org/api/v1/json/data/37",
+      "release": "OpenML diabetes #37, version 1 (2014-04-06)",
+      "download_url": "https://openml.org/data/v1/download/37/diabetes.arff",
+      "license": "Public (OpenML metadata label)",
+      "terms_url": "https://docs.openml.org/intro/terms/",
+      "terms_status": "upstream rights unverified",
+      "terms_reference": "https://cran.r-project.org/web/packages/mlbench/refman/mlbench.html#SynthDiabetes",
+      "verified_sha256": "4eddd5b2b64679e8888348e306520a393d6a28e1ddc9643cfb76fc5d912d6d40",
+      "sha256": "4eddd5b2b64679e8888348e306520a393d6a28e1ddc9643cfb76fc5d912d6d40",
+      "matches_verified_release": true
+    },
+    "source_columns": [
+      "preg",
+      "plas",
+      "pres",
+      "skin",
+      "insu",
+      "mass",
+      "pedi",
+      "age",
+      "class"
+    ],
+    "feature_order": [
+      "glucose",
+      "bmi",
+      "age"
+    ],
+    "feature_sources": {
+      "glucose": "plas",
+      "bmi": "mass",
+      "age": "age"
+    },
+    "feature_units": {
+      "glucose": null,
+      "bmi": "kg/m²",
+      "age": "years"
+    },
+    "raw_rows": 768,
+    "n_samples": 768,
+    "duplicate_rows": 0,
+    "raw_label_counts": {
+      "tested_negative": 500,
+      "tested_positive": 268
+    },
+    "label_counts": {
+      "0": 500,
+      "1": 268
+    },
+    "source_missing_by_column": {
+      "preg": 0,
+      "plas": 0,
+      "pres": 0,
+      "skin": 0,
+      "insu": 0,
+      "mass": 0,
+      "pedi": 0,
+      "age": 0,
+      "class": 0
+    },
+    "zero_sentinel_by_column": {
+      "plas": 5,
+      "mass": 11
+    },
+    "missing_by_feature": {
+      "glucose": 5,
+      "bmi": 11,
+      "age": 0
+    }
+  }
+}
