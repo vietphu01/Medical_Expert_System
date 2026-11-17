@@ -51,8 +51,8 @@ class DiagnosisValidationTests(unittest.TestCase):
     def assert_invalid(self, field, *, payload=None, data=None, content_type=None):
         before = self.count_history()
         with (
-            patch.object(self.module, 'compute_fuzzy_facts') as fuzzy,
-            patch.object(self.module.engine, 'forward_chaining') as inference,
+            patch.object(self.module, 'evaluate_rules') as inference,
+            patch.object(self.module, 'make_trace') as fusion,
         ):
             if data is not None:
                 response = self.client.post('/api/diagnose', data=data, content_type=content_type)
@@ -64,8 +64,8 @@ class DiagnosisValidationTests(unittest.TestCase):
         self.assertIn(field, errors)
         self.assertIsInstance(errors[field], str)
         self.assertTrue(errors[field])
-        fuzzy.assert_not_called()
         inference.assert_not_called()
+        fusion.assert_not_called()
         self.assertEqual(self.count_history(), before)
 
     def test_valid_requests_for_all_diseases_and_form_strings(self):
@@ -84,9 +84,29 @@ class DiagnosisValidationTests(unittest.TestCase):
                     result = response.get_json()
                     expected_keys = {'ml_probability', 'fuzzy_values', 'expert_conclusions', 'fired_rules'}
                     self.assertLessEqual(expected_keys, result.keys())
-                    if disease == 'heart':
-                        self.assertIn('HEART_R1', result['fired_rules'])
+                    self.assertEqual(result['trace']['target'], self.module.DATASET_BY_DISEASE[disease])
                     self.assertEqual(self.count_history(), before + 1)
+
+    def test_trace_includes_only_matching_target_in_fusion(self):
+        payload = self.payload()
+        payload['inputs'].update(age=60, chol=240)
+        result = self.client.post('/api/diagnose', json=payload).get_json()
+        trace = result['trace']
+        self.assertEqual(trace['target'], 'cleveland')
+        self.assertEqual(trace['ml'], {'model': 'fixture', 'score': 0.45})
+        self.assertEqual(trace['result']['rule_status'], 'matched')
+        self.assertAlmostEqual(trace['result']['rule_score'], 0.55)
+        self.assertAlmostEqual(trace['result']['combined_score'], 0.7525)
+        self.assertEqual({r['id']: r['used_in_fusion'] for r in trace['fired_rules']},
+                         {'CLEV_TARGET_01': True, 'CLEV_SECONDARY_01': False})
+        self.assertEqual(set(result['fired_rules']), {'CLEV_TARGET_01', 'CLEV_SECONDARY_01'})
+
+    def test_trace_without_target_rule_uses_ml_score(self):
+        result = self.client.post('/api/diagnose', json=self.payload('kidney')).get_json()
+        self.assertEqual(result['trace']['result']['rule_status'], 'no_matching_target_rule')
+        self.assertIsNone(result['trace']['result']['rule_score'])
+        self.assertEqual(result['trace']['result']['combined_score'], 0.45)
+        self.assertEqual(result['expert_conclusions'], ['Không có luật đích nào khớp với dữ kiện đã nhập.'])
 
     def test_unavailable_models_validate_first_and_do_not_write_history(self):
         self.module.MODELS.clear()

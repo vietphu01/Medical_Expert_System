@@ -5,12 +5,11 @@ from math import isfinite
 from flask import Flask, render_template, request, jsonify
 import sqlite3
 from diseases_config import DISEASES
-from fuzzy_engine import compute_fuzzy_facts
-from inference_engine import ExpertEngine
-from model_runtime import load_run
+from research_rules import evaluate_rules
+from fusion import make_trace
+from model_runtime import NAMES, load_run
 
 app = Flask(__name__)
-engine = ExpertEngine('knowledge_base.json')
 
 DATASET_BY_DISEASE = {
     'heart': 'cleveland', 'diabetes': 'pima', 'liver': 'ilpd', 'kidney': 'ckd',
@@ -126,7 +125,7 @@ def diagnose():
         return jsonify(errors={'disease': 'Chọn một nhóm bệnh được hỗ trợ.'}), 400
     dcfg = DISEASES[dkey]
 
-    inputs, symptoms, errors = validate_diagnosis_fields(data, dcfg)
+    inputs, _, errors = validate_diagnosis_fields(data, dcfg)
     if errors:
         return jsonify(errors=errors), 400
     model = MODELS.get(DATASET_BY_DISEASE[dkey])
@@ -134,23 +133,21 @@ def diagnose():
         return unavailable()
     ml_prob = float(model.score(inputs))
 
-    # 3. Tính Logic Mờ
-    fuzzy_values, fuzzy_facts = compute_fuzzy_facts(dcfg, inputs)
-    
-    # 4. Thêm facts từ triệu chứng lâm sàng (nếu user nhập)
-    facts = {**symptoms, **fuzzy_facts, "old_age": inputs['age'] >= 50}
-    
-    # 5. Suy diễn chuyên gia
-    conclusions, fired = engine.forward_chaining(dcfg["rule_file_prefix"], facts, ml_prob)
-    
-    result_text = []
-    if not conclusions:
-        result_text.append("Không có luật hiện tại nào khớp với dữ kiện đã nhập.")
-    else:
-        sorted_c = sorted(conclusions.items(), key=lambda x: x[1]['cf'], reverse=True)
-        for name, det in sorted_c:
-            result_text.append(f"{name} — Điểm hỗ trợ luật: {det['cf']*100:.1f}% (Luật: {', '.join(det['rules'])})")
-    
+    dataset = DATASET_BY_DISEASE[dkey]
+    facts, fired = evaluate_rules(dataset, inputs)
+    model_name = NAMES.get(model.variant, model.variant)
+    trace = make_trace(dataset, model_name, ml_prob, facts, fired)
+    fuzzy_values = {
+        fact['key']: round(fact['membership'] * 100, 2)
+        for fact in facts if fact['key'] is not None and fact['membership'] is not None
+    }
+    result_text = [
+        f"{rule['conclusion']} — Điểm hỗ trợ luật: {rule['cf'] * 100:.1f}% (Luật: {rule['id']})"
+        for rule in trace['fired_rules']
+    ]
+    if trace['result']['rule_status'] == 'no_matching_target_rule':
+        result_text.append("Không có luật đích nào khớp với dữ kiện đã nhập.")
+
     # 6. Lưu lịch sử
     with closing(sqlite3.connect(app.config['DATABASE'])) as conn, conn:
         conn.execute("INSERT INTO history (disease, features, ml_prob, risk_level, advice) VALUES (?,?,?,?,?)",
@@ -158,10 +155,11 @@ def diagnose():
     
     return jsonify({
         'ml_probability': round(ml_prob * 100, 2),
-        'ml_model': model.variant,
+        'ml_model': model_name,
         'fuzzy_values': fuzzy_values,
         'expert_conclusions': result_text,
-        'fired_rules': fired
+        'fired_rules': [rule['id'] for rule in fired],
+        'trace': trace,
     })
 
 @app.route('/api/history')
