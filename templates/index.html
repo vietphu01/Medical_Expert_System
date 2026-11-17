@@ -35,20 +35,20 @@
         <!-- Cột phải: Kết quả -->
         <div class="col-md-7">
             <div class="card">
-                <div class="card-header bg-success text-white"><strong>Kết quả chẩn đoán</strong></div>
+                <div class="card-header bg-success text-white"><strong>Kết quả hỗ trợ</strong></div>
                 <div class="card-body">
                     <div id="emptyState" class="text-center text-muted py-5">Chọn bệnh và nhập thông tin để bắt đầu</div>
                     <div id="loading" class="text-center d-none py-3">
                         <div class="spinner-border text-primary"></div><p class="mt-2">Đang suy diễn...</p>
                     </div>
                     <div id="resultSection" class="d-none">
-                        <h5>Xác suất từ Ensemble ML: <span id="mlProb" class="badge bg-danger fs-6"></span></h5>
+                        <h5>Điểm hỗ trợ ML (<span id="mlModel"></span>): <span id="mlProb" class="badge bg-danger fs-6"></span></h5>
                         <canvas id="probChart" height="70"></canvas>
                         <hr>
                         <h5>🌫️ Chỉ số Logic Mờ:</h5>
                         <div id="fuzzyBars"></div>
                         <hr>
-                        <h5>🧠 Kết luận Hệ chuyên gia (Forward Chaining):</h5>
+                        <h5>🧠 Kết quả luật hiện tại (chưa rà soát):</h5>
                         <ul id="expertList" class="list-group"></ul>
                     </div>
                 </div>
@@ -58,13 +58,14 @@
 
     <!-- So sánh 5 mô hình -->
     <div class="card mt-3">
-        <div class="card-header bg-dark text-white"><strong>📊 So sánh 5 mô hình Machine Learning (tự code 100%)</strong></div>
+        <div class="card-header bg-dark text-white"><strong>📊 So sánh mô hình Machine Learning — CV trên tập train</strong></div>
         <div class="card-body">
+            <p id="modelStatus" role="status" class="text-muted"></p>
             <div class="row">
                 <div class="col-md-7"><canvas id="modelChart" height="180"></canvas></div>
                 <div class="col-md-5">
                     <table class="table table-sm table-hover text-center" id="modelTable">
-                        <thead><tr><th>Model</th><th>Acc</th><th>F1</th><th>CV</th></tr></thead>
+                        <thead><tr><th>Model</th><th>Accuracy CV</th><th>F1 CV</th><th>F1 CV ± độ lệch chuẩn</th></tr></thead>
                         <tbody></tbody>
                     </table>
                 </div>
@@ -80,7 +81,7 @@
         <div class="card-header bg-secondary text-white"><strong>📜 Lịch sử chẩn đoán</strong></div>
         <div class="card-body p-0">
             <table class="table table-sm table-striped mb-0 text-center">
-                <thead><tr><th>ID</th><th>Bệnh</th><th>ML Prob</th><th>Mức độ</th><th>Thời gian</th></tr></thead>
+                <thead><tr><th>ID</th><th>Bệnh</th><th>Điểm ML</th><th>Mức độ cũ</th><th>Thời gian</th></tr></thead>
                 <tbody id="historyBody"></tbody>
             </table>
         </div>
@@ -145,7 +146,7 @@
             });
             form.innerHTML += `
                 <ul id="diagnosisErrors" class="alert alert-danger d-none list-unstyled mb-2" role="alert"></ul>
-                <button type="submit" class="btn btn-success w-100 mt-2">🔬 Chạy Chẩn Đoán</button>`;
+                <button type="submit" class="btn btn-success w-100 mt-2">🔬 Chạy suy luận</button>`;
             form.onsubmit = runDiagnosis;
         }
 
@@ -227,13 +228,14 @@
             
             // ML Prob + Chart
             document.getElementById('mlProb').innerText = data.ml_probability + '%';
+            document.getElementById('mlModel').textContent = data.ml_model;
             document.getElementById('mlProb').className = 'badge fs-6 ' + 
                 (data.ml_probability > 70 ? 'bg-danger' : data.ml_probability > 40 ? 'bg-warning text-dark' : 'bg-success');
             
             if (probChart) probChart.destroy();
             probChart = new Chart(document.getElementById('probChart'), {
                 type: 'bar',
-                data: { labels: ['Nguy cơ mắc bệnh (%)'], datasets: [{
+                data: { labels: ['Điểm hỗ trợ ML (%)'], datasets: [{
                     data: [data.ml_probability],
                     backgroundColor: data.ml_probability > 70 ? '#dc3545' : data.ml_probability > 40 ? '#ffc107' : '#198754'
                 }]},
@@ -266,11 +268,29 @@
 
         // ===== SO SÁNH MODEL =====
         async function loadModelStats() {
-            const res = await fetch(`/api/model_stats/${currentDisease}`);
-            const data = await res.json();
-            
-            // Bảng
+            const disease = currentDisease;
             const tbody = document.querySelector('#modelTable tbody');
+            const status = document.getElementById('modelStatus');
+            tbody.replaceChildren();
+            status.textContent = 'Đang tải thông tin mô hình…';
+            document.getElementById('treeRules').textContent = '';
+            if (modelChart) { modelChart.destroy(); modelChart = null; }
+            let data;
+            try {
+                const res = await fetch(`/api/model_stats/${disease}`);
+                data = await res.json();
+                if (disease !== currentDisease) return;
+                if (!res.ok) {
+                    status.textContent = data?.errors?.model || 'Không tải được thông tin mô hình.';
+                    return;
+                }
+            } catch {
+                if (disease === currentDisease) status.textContent = 'Không tải được thông tin mô hình.';
+                return;
+            }
+            status.textContent = `Mô hình được chọn: ${data.selected_model}. Các chỉ số là trung bình CV trên tập train (%).`;
+
+            // Bảng
             tbody.innerHTML = '';
             data.stats.forEach(s => {
                 tbody.innerHTML += `<tr>
@@ -288,10 +308,10 @@
                 data: {
                     labels: data.stats.map(s => s.name),
                     datasets: [
-                        { label: 'Accuracy', data: data.stats.map(s => s.accuracy), backgroundColor: '#0d6efd' },
-                        { label: 'Precision', data: data.stats.map(s => s.precision), backgroundColor: '#198754' },
-                        { label: 'Recall', data: data.stats.map(s => s.recall), backgroundColor: '#ffc107' },
-                        { label: 'F1 Score', data: data.stats.map(s => s.f1), backgroundColor: '#dc3545' }
+                        { label: 'Accuracy CV', data: data.stats.map(s => s.accuracy), backgroundColor: '#0d6efd' },
+                        { label: 'Precision CV', data: data.stats.map(s => s.precision), backgroundColor: '#198754' },
+                        { label: 'Recall CV', data: data.stats.map(s => s.recall), backgroundColor: '#ffc107' },
+                        { label: 'F1 CV', data: data.stats.map(s => s.f1), backgroundColor: '#dc3545' }
                     ]
                 },
                 options: { 

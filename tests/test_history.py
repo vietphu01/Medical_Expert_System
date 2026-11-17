@@ -6,7 +6,7 @@ import unittest
 from contextlib import chdir, closing
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,6 +27,27 @@ class HistoryTests(unittest.TestCase):
 
     def setUp(self):
         self.enterContext(chdir(self.directory))
+
+    def test_missing_and_malformed_runs_start_unavailable(self):
+        for content in (None, '{bad json'):
+            with self.subTest(content=content):
+                run_dir = self.directory / ('missing-run' if content is None else 'bad-run')
+                if content is not None:
+                    run_dir.mkdir(exist_ok=True)
+                    (run_dir / 'models.json').write_text(content, encoding='utf-8')
+                spec = importlib.util.spec_from_file_location('unavailable_test_app', ROOT / 'app.py')
+                module = importlib.util.module_from_spec(spec)
+                with patch.dict(os.environ, MEDICAL_HISTORY_DB=str(self.directory / 'unavailable.db'),
+                                MEDICAL_MODEL_RUN=str(run_dir)):
+                    spec.loader.exec_module(module)
+                module.app.template_folder = str(ROOT / 'templates')
+                client = module.app.test_client()
+                page = client.get('/')
+                self.assertEqual(page.status_code, 200)
+                self.assertIn('modelStatus', page.get_data(as_text=True))
+                response = client.get('/api/model_stats/heart')
+                self.assertEqual(response.status_code, 503)
+                self.assertIn('model', response.get_json()['errors'])
 
     def test_startup_creates_full_history_schema(self):
         self.assertTrue(self.startup_db.is_file())
@@ -61,6 +82,8 @@ class HistoryTests(unittest.TestCase):
         db_path = self.directory / 'routes.db'
         self.enterContext(patch.dict(self.module.app.config, DATABASE=str(db_path)))
         self.module.init_db()
+        model = Mock(variant='fixture', score=Mock(return_value=0.45))
+        self.enterContext(patch.dict(self.module.MODELS, {'cleveland': model}, clear=True))
         client = self.module.app.test_client()
         diagnosis = client.post('/api/diagnose', json={
             'disease': 'heart',

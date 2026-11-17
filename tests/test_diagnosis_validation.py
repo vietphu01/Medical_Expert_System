@@ -6,7 +6,7 @@ import unittest
 from contextlib import chdir, closing
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from diseases_config import DISEASES
 
@@ -32,6 +32,9 @@ class DiagnosisValidationTests(unittest.TestCase):
         self.db = db_dir / 'history.db'
         self.enterContext(patch.dict(self.module.app.config, DATABASE=str(self.db)))
         self.module.init_db()
+        models = {dataset: Mock(variant='fixture', score=Mock(return_value=0.45))
+                  for dataset in self.module.DATASET_BY_DISEASE.values()}
+        self.enterContext(patch.dict(self.module.MODELS, models, clear=True))
         self.client = self.module.app.test_client()
 
     def count_history(self):
@@ -84,6 +87,28 @@ class DiagnosisValidationTests(unittest.TestCase):
                     if disease == 'heart':
                         self.assertIn('HEART_R1', result['fired_rules'])
                     self.assertEqual(self.count_history(), before + 1)
+
+    def test_unavailable_models_validate_first_and_do_not_write_history(self):
+        self.module.MODELS.clear()
+        response = self.client.post('/api/diagnose', json=self.payload())
+        self.assertEqual(response.status_code, 503)
+        self.assertIn('model', response.get_json()['errors'])
+        self.assertEqual(self.count_history(), 0)
+        self.assertEqual(self.client.get('/api/model_stats/heart').status_code, 503)
+        self.assert_invalid('inputs.age', payload={'disease': 'heart', 'inputs': {}})
+
+    def test_selected_model_receives_named_inputs_and_stats_are_cv(self):
+        model = self.module.MODELS['cleveland']
+        model.stats = [{'name': 'fixture', 'f1': 70}]
+        model.tree_rules = 'fixture tree'
+        response = self.client.post('/api/diagnose', json=self.payload())
+        self.assertEqual(response.status_code, 200)
+        model.score.assert_called_once_with(self.payload()['inputs'])
+        self.assertEqual(response.get_json()['ml_model'], 'fixture')
+        stats = self.client.get('/api/model_stats/heart').get_json()
+        self.assertEqual(stats['evaluation'], 'train_cv')
+        self.assertEqual(stats['selected_model'], 'fixture')
+        self.assertEqual(stats['stats'], model.stats)
 
     def test_body_must_be_valid_json_object(self):
         for data, content_type in [

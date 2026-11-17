@@ -97,15 +97,15 @@ class GaussianNBScratch:
             self.vars[c] = X_c.var(axis=0) + 1e-9
             self.priors[c] = len(X_c) / len(X)
         return self
-    def _gaussian_pdf(self, x, mean, var):
-        return np.exp(-((x - mean) ** 2) / (2 * var)) / np.sqrt(2 * np.pi * var)
     def predict_proba(self, X):
         probs = []
         for x in X:
             posteriors = []
             for c in self.classes:
                 prior = np.log(self.priors[c])
-                likelihood = np.sum(np.log(self._gaussian_pdf(x, self.means[c], self.vars[c])))
+                variance = self.vars[c]
+                log_density = -0.5 * (np.log(2 * np.pi * variance) + (x - self.means[c]) ** 2 / variance)
+                likelihood = np.sum(log_density)
                 posteriors.append(prior + likelihood)
             posteriors = np.array(posteriors)
             posteriors = np.exp(posteriors - np.max(posteriors))
