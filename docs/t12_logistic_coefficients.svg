@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="740" height="416" viewBox="0 0 740 416" role="img" aria-labelledby="title description">
+<title id="title">Hệ số Logistic Regression của Cleveland và Pima</title>
+<desc id="description">Biểu đồ thanh ngang của các hệ số trên dữ liệu đã chuẩn hóa bằng phần train. Mốc 0 được hiển thị trên cả hai bảng dùng chung thang đo.</desc>
+<rect width="740" height="416" fill="#ffffff"/>
+<g font-family="DejaVu Sans, sans-serif" fill="#16253a" font-size="14">
+<text x="24" y="34" font-size="23" font-weight="700">Hệ số Logistic Regression</text>
+<text x="24" y="57" fill="#465c76">Cleveland và Pima · đặc trưng chuẩn hóa trên phần train</text>
+<text x="24" y="88" font-weight="700" font-size="16">Cleveland</text>
+<line x1="200" x2="200" y1="98" y2="199" stroke="#dde5ed"/>
+<line x1="290.0" x2="290.0" y1="98" y2="199" stroke="#dde5ed"/>
+<line x1="380" x2="380" y1="98" y2="199" stroke="#6a7b90"/>
+<line x1="470.0" x2="470.0" y1="98" y2="199" stroke="#dde5ed"/>
+<line x1="560" x2="560" y1="98" y2="199" stroke="#dde5ed"/>
+<line x1="650.0" x2="650.0" y1="98" y2="199" stroke="#dde5ed"/>
+<text x="24" y="120">age</text>
+<rect x="380.00" y="105" width="76.01" height="21" fill="#246498"/>
+<text x="464.01" y="120" text-anchor="start">+0.422</text>
+<text x="24" y="152">bp</text>
+<rect x="380.00" y="137" width="61.41" height="21" fill="#246498"/>
+<text x="449.41" y="152" text-anchor="start">+0.341</text>
+<text x="24" y="184">chol</text>
+<rect x="380.00" y="169" width="12.90" height="21" fill="#246498"/>
+<text x="400.90" y="184" text-anchor="start">+0.072</text>
+<text x="24" y="223" font-weight="700" font-size="16">Pima</text>
+<line x1="200" x2="200" y1="233" y2="334" stroke="#dde5ed"/>
+<text x="200" y="354" text-anchor="middle" fill="#465c76">-1</text>
+<line x1="290.0" x2="290.0" y1="233" y2="334" stroke="#dde5ed"/>
+<text x="290.0" y="354" text-anchor="middle" fill="#465c76">-0.5</text>
+<line x1="380" x2="380" y1="233" y2="334" stroke="#6a7b90"/>
+<text x="380" y="354" text-anchor="middle" fill="#465c76">0</text>
+<line x1="470.0" x2="470.0" y1="233" y2="334" stroke="#dde5ed"/>
+<text x="470.0" y="354" text-anchor="middle" fill="#465c76">0.5</text>
+<line x1="560" x2="560" y1="233" y2="334" stroke="#dde5ed"/>
+<text x="560" y="354" text-anchor="middle" fill="#465c76">1</text>
+<line x1="650.0" x2="650.0" y1="233" y2="334" stroke="#dde5ed"/>
+<text x="650.0" y="354" text-anchor="middle" fill="#465c76">1.5</text>
+<text x="24" y="255">glucose</text>
+<rect x="380.00" y="240" width="204.53" height="21" fill="#246498"/>
+<text x="592.53" y="255" text-anchor="start">+1.136</text>
+<text x="24" y="287">bmi</text>
+<rect x="380.00" y="272" width="107.52" height="21" fill="#246498"/>
+<text x="495.52" y="287" text-anchor="start">+0.597</text>
+<text x="24" y="319">age</text>
+<rect x="380.00" y="304" width="52.50" height="21" fill="#246498"/>
+<text x="440.50" y="319" text-anchor="start">+0.292</text>
+<text x="380" y="389" fill="#465c76" text-anchor="middle">Thay đổi log-odds của lớp dương khi đặc trưng tăng 1 độ lệch chuẩn</text>
+</g>
+</svg>
