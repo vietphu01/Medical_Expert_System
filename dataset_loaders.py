@@ -1,4 +1,4 @@
-"""Load the pinned Cleveland and Pima source formats without imputing features."""
+"""Read source records and project them without imputing features."""
 
 import csv
 import re
@@ -93,24 +93,26 @@ def _pima_data_section(lines):
 
 
 def _parse_number(token, column, location):
-    if token in ("", "?"):
-        return None
     try:
         number = float(token)
     except (ValueError, OverflowError) as error:
         raise ValueError(f"{location}: {column} must be numeric") from error
     if not isfinite(number):
         raise ValueError(f"{location}: {column} must be finite")
-    if column == "age":
+    if column.lower() == "age":
         if not number.is_integer():
             raise ValueError(f"{location}: age must be an integer")
         return int(number)
     return number
 
 
-def _load(path, dataset, columns, feature_columns, label_map, *, units, zero_sentinels=()):
+def _load(
+    path, dataset, columns, feature_columns, label_map, *, units, zero_sentinels=(),
+    encoding="utf-8-sig", header_parser=None, numeric_columns=None, nominal_values=None,
+    source_info=None, missing_tokens=("", "?"),
+):
     raw = Path(path).read_bytes()
-    content = raw.decode("utf-8-sig")
+    content = raw.decode(encoding)
     lines = (
         (line_number, line.strip())
         for line_number, line in enumerate(content.splitlines(), 1)
@@ -118,6 +120,10 @@ def _load(path, dataset, columns, feature_columns, label_map, *, units, zero_sen
     )
     if dataset == "pima":
         lines = _pima_data_section(lines)
+    elif header_parser is not None:
+        lines = header_parser(lines)
+    numeric_columns = set(columns[:-1] if numeric_columns is None else numeric_columns)
+    nominal_values = nominal_values or {}
 
     samples = []
     seen = set()
@@ -140,10 +146,17 @@ def _load(path, dataset, columns, feature_columns, label_map, *, units, zero_sen
         if raw_label not in label_map:
             raise ValueError(f"{location}: invalid label in {columns[-1]}")
         y = label_map[raw_label]
-        values = {
-            column: _parse_number(token.strip(), column, location)
-            for column, token in zip(columns[:-1], fields[:-1])
-        }
+        values = {}
+        for column, token in zip(columns[:-1], fields[:-1]):
+            value = token.strip()
+            if value in missing_tokens:
+                values[column] = None
+                continue
+            if column in numeric_columns:
+                value = _parse_number(value, column, location)
+            if column in nominal_values and value not in nominal_values[column]:
+                raise ValueError(f"{location}: invalid category in {column}")
+            values[column] = value
         raw_label_counts[raw_label] += 1
         for column, value in values.items():
             if value is None:
@@ -172,10 +185,11 @@ def _load(path, dataset, columns, feature_columns, label_map, *, units, zero_sen
         raise ValueError(f"{dataset}: expected at least one data row")
 
     fingerprint = sha256(raw).hexdigest()
+    source_info = SOURCES[dataset] if source_info is None else source_info
     source = {
-        **SOURCES[dataset],
+        **source_info,
         "sha256": fingerprint,
-        "matches_verified_release": fingerprint == SOURCES[dataset]["verified_sha256"],
+        "matches_verified_release": fingerprint == source_info["verified_sha256"],
     }
     metadata = {
         "dataset": dataset,

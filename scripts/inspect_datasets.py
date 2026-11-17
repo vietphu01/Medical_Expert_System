@@ -4,22 +4,20 @@ import argparse
 import json
 from pathlib import Path
 
-from dataset_loaders import load_cleveland, load_pima
+from dataset_registry import DATASETS
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--cleveland", type=Path, help="UCI processed.cleveland.data")
-    parser.add_argument("--pima", type=Path, help="OpenML #37 diabetes.arff")
+    for dataset, (_, description) in DATASETS.items():
+        parser.add_argument(f"--{dataset}", type=Path, help=description)
     args = parser.parse_args()
-    if args.cleveland is None and args.pima is None:
-        parser.error("provide --cleveland and/or --pima")
+    if not any(getattr(args, name) is not None for name in DATASETS):
+        parser.error("provide at least one dataset")
 
     metadata = {}
-    for dataset, path, load in (
-        ("cleveland", args.cleveland, load_cleveland),
-        ("pima", args.pima, load_pima),
-    ):
+    for dataset, (load, _) in DATASETS.items():
+        path = getattr(args, dataset)
         if path is not None:
             try:
                 _, metadata[dataset] = load(path)

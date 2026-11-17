@@ -1,0 +1,180 @@
+{
+  "ilpd": {
+    "dataset": "ilpd",
+    "source": {
+      "record_url": "https://archive.ics.uci.edu/dataset/225/ilpd+indian+liver+patient+dataset",
+      "metadata_url": "https://archive.ics.uci.edu/api/dataset?id=225",
+      "doi": "10.24432/C5D02C",
+      "release": "UCI ILPD #225, original CSV (donated 2012-05-20)",
+      "download_url": "https://archive.ics.uci.edu/static/public/225/ilpd+indian+liver+patient+dataset.zip",
+      "archive_member": "Indian Liver Patient Dataset (ILPD).csv",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "terms_status": "verified",
+      "verified_sha256": "84feac16488de5cf89bd22bd802c77f25841fe93e9ddd32355683e94d46c3425",
+      "sha256": "84feac16488de5cf89bd22bd802c77f25841fe93e9ddd32355683e94d46c3425",
+      "matches_verified_release": true
+    },
+    "source_columns": [
+      "Age",
+      "Gender",
+      "TB",
+      "DB",
+      "Alkphos",
+      "Sgpt",
+      "Sgot",
+      "TP",
+      "ALB",
+      "A/G Ratio",
+      "Selector"
+    ],
+    "feature_order": [
+      "bilirubin",
+      "albumin",
+      "age"
+    ],
+    "feature_sources": {
+      "bilirubin": "TB",
+      "albumin": "ALB",
+      "age": "Age"
+    },
+    "feature_units": {
+      "bilirubin": null,
+      "albumin": null,
+      "age": "years"
+    },
+    "raw_rows": 583,
+    "n_samples": 570,
+    "duplicate_rows": 13,
+    "raw_label_counts": {
+      "1": 416,
+      "2": 167
+    },
+    "label_counts": {
+      "0": 164,
+      "1": 406
+    },
+    "source_missing_by_column": {
+      "Age": 0,
+      "Gender": 0,
+      "TB": 0,
+      "DB": 0,
+      "Alkphos": 0,
+      "Sgpt": 0,
+      "Sgot": 0,
+      "TP": 0,
+      "ALB": 0,
+      "A/G Ratio": 4,
+      "Selector": 0
+    },
+    "zero_sentinel_by_column": {},
+    "missing_by_feature": {
+      "bilirubin": 0,
+      "albumin": 0,
+      "age": 0
+    }
+  },
+  "ckd": {
+    "dataset": "ckd",
+    "source": {
+      "record_url": "https://archive.ics.uci.edu/dataset/336/chronic+kidney+disease",
+      "metadata_url": "https://archive.ics.uci.edu/api/dataset?id=336",
+      "doi": "10.24432/C5G020",
+      "release": "UCI Chronic Kidney Disease #336, created 2015, metadata updated 2024-03-04",
+      "download_url": "https://archive.ics.uci.edu/static/public/336/data.csv",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "terms_status": "verified",
+      "verified_sha256": "0eeea8d17f5ad8792d854999d6ddf1602ec4e116616f6ccdfdaef0ba8109e694",
+      "bp_measurement": "blood pressure; systolic versus diastolic not specified by UCI",
+      "sha256": "0eeea8d17f5ad8792d854999d6ddf1602ec4e116616f6ccdfdaef0ba8109e694",
+      "matches_verified_release": true
+    },
+    "source_columns": [
+      "age",
+      "bp",
+      "sg",
+      "al",
+      "su",
+      "rbc",
+      "pc",
+      "pcc",
+      "ba",
+      "bgr",
+      "bu",
+      "sc",
+      "sod",
+      "pot",
+      "hemo",
+      "pcv",
+      "wbcc",
+      "rbcc",
+      "htn",
+      "dm",
+      "cad",
+      "appet",
+      "pe",
+      "ane",
+      "class"
+    ],
+    "feature_order": [
+      "creatinine",
+      "bp",
+      "age"
+    ],
+    "feature_sources": {
+      "creatinine": "sc",
+      "bp": "bp",
+      "age": "age"
+    },
+    "feature_units": {
+      "creatinine": "mg/dL",
+      "bp": "mmHg",
+      "age": "years"
+    },
+    "raw_rows": 400,
+    "n_samples": 400,
+    "duplicate_rows": 0,
+    "raw_label_counts": {
+      "ckd": 250,
+      "notckd": 150
+    },
+    "label_counts": {
+      "0": 150,
+      "1": 250
+    },
+    "source_missing_by_column": {
+      "age": 9,
+      "bp": 12,
+      "sg": 47,
+      "al": 46,
+      "su": 49,
+      "rbc": 152,
+      "pc": 65,
+      "pcc": 4,
+      "ba": 4,
+      "bgr": 44,
+      "bu": 19,
+      "sc": 17,
+      "sod": 87,
+      "pot": 88,
+      "hemo": 52,
+      "pcv": 71,
+      "wbcc": 106,
+      "rbcc": 131,
+      "htn": 2,
+      "dm": 2,
+      "cad": 2,
+      "appet": 1,
+      "pe": 1,
+      "ane": 1,
+      "class": 0
+    },
+    "zero_sentinel_by_column": {},
+    "missing_by_feature": {
+      "creatinine": 17,
+      "bp": 12,
+      "age": 9
+    }
+  }
+}
