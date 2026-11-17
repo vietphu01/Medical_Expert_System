@@ -1,3 +1,6 @@
+import os
+from contextlib import closing
+
 from flask import Flask, render_template, request, jsonify
 import numpy as np, sqlite3
 from math_ml_from_scratch import (
@@ -69,15 +72,14 @@ def train_all():
 train_all()
 
 # ===== DATABASE =====
+app.config['DATABASE'] = os.environ.get('MEDICAL_HISTORY_DB', 'medical_history.db')
+
 def init_db():
-    conn = sqlite3.connect('medical_history.db')
-    # DROP bảng cũ để cập nhật schema mới (tránh lỗi "no column named...")
-    conn.execute("DROP TABLE IF EXISTS history")
-    conn.execute('''CREATE TABLE IF NOT EXISTS history
-        (id INTEGER PRIMARY KEY AUTOINCREMENT, disease TEXT, features TEXT,
-         ml_prob REAL, risk_level TEXT, advice TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
-    conn.commit()
-    conn.close()
+    with closing(sqlite3.connect(app.config['DATABASE'])) as conn, conn:
+        conn.execute('''CREATE TABLE IF NOT EXISTS history
+            (id INTEGER PRIMARY KEY AUTOINCREMENT, disease TEXT, features TEXT,
+             ml_prob REAL, risk_level TEXT, advice TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
+
 init_db()
 
 # ===== API =====
@@ -130,10 +132,9 @@ def diagnose():
             result_text.append(f"{name} — Độ tin cậy: {det['cf']*100:.1f}% (Luật: {', '.join(det['rules'])})")
     
     # 6. Lưu lịch sử
-    conn = sqlite3.connect('medical_history.db')
-    conn.execute("INSERT INTO history (disease, features, ml_prob, risk_level, advice) VALUES (?,?,?,?,?)",
-                 (dkey, str(inputs), ml_prob, "HIGH" if ml_prob > 0.7 else "MEDIUM" if ml_prob > 0.4 else "LOW", " | ".join(result_text)))
-    conn.commit(); conn.close()
+    with closing(sqlite3.connect(app.config['DATABASE'])) as conn, conn:
+        conn.execute("INSERT INTO history (disease, features, ml_prob, risk_level, advice) VALUES (?,?,?,?,?)",
+                     (dkey, str(inputs), ml_prob, "HIGH" if ml_prob > 0.7 else "MEDIUM" if ml_prob > 0.4 else "LOW", " | ".join(result_text)))
     
     return jsonify({
         'ml_probability': round(ml_prob * 100, 2),
@@ -144,9 +145,9 @@ def diagnose():
 
 @app.route('/api/history')
 def get_history():
-    conn = sqlite3.connect('medical_history.db')
-    rows = conn.execute("SELECT * FROM history ORDER BY timestamp DESC LIMIT 10").fetchall()
-    conn.close(); return jsonify(rows)
+    with closing(sqlite3.connect(app.config['DATABASE'])) as conn:
+        rows = conn.execute("SELECT * FROM history ORDER BY timestamp DESC LIMIT 10").fetchall()
+    return jsonify(rows)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
