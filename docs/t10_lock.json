@@ -1,0 +1,188 @@
+{
+  "run_id": "t10-test-seed42",
+  "locked_at": "2026-11-17T19:40:57.375066+00:00",
+  "seed": 42,
+  "threshold": 0.5,
+  "fuzzy_mode": "boolean_membership_gt_0.5",
+  "cv_run": "t06-cv-seed42",
+  "validation_run": "t09-validation-seed42",
+  "validation_commit": "5df8e64",
+  "model_configs": {
+    "logistic": {
+      "lr": 0.1,
+      "epochs": 300
+    },
+    "knn": {
+      "k": 7
+    },
+    "gaussian_nb": {},
+    "tree": {
+      "max_depth": 4,
+      "min_samples_split": 5,
+      "criterion": "entropy"
+    },
+    "ensemble": {
+      "members": [
+        "logistic",
+        "knn",
+        "gaussian_nb",
+        "tree"
+      ]
+    },
+    "majority": {
+      "tie_label": 0
+    }
+  },
+  "preprocessing": "median then population standardization, fitted only on train",
+  "selected": {
+    "cleveland": "gaussian_nb",
+    "pima": "knn",
+    "ilpd": "logistic",
+    "ckd": "tree"
+  },
+  "feature_schema": {
+    "cleveland": {
+      "age": "years",
+      "bp": "mmHg",
+      "chol": "mg/dL"
+    },
+    "pima": {
+      "glucose": null,
+      "bmi": "kg/m²",
+      "age": "years"
+    },
+    "ilpd": {
+      "bilirubin": null,
+      "albumin": null,
+      "age": "years"
+    },
+    "ckd": {
+      "creatinine": "mg/dL",
+      "bp": "mmHg",
+      "age": "years"
+    }
+  },
+  "facts": {
+    "cleveland": {
+      "age_at_least_55": [
+        "age",
+        "at_least",
+        55
+      ],
+      "chol_elevated": [
+        "chol",
+        "ramp",
+        [
+          180,
+          220
+        ]
+      ]
+    },
+    "pima": {
+      "age_35_to_70": [
+        "age",
+        "between",
+        [
+          35,
+          70
+        ]
+      ],
+      "bmi_elevated": [
+        "bmi",
+        "ramp",
+        [
+          23,
+          27
+        ]
+      ],
+      "bmi_higher": [
+        "bmi",
+        "ramp",
+        [
+          28,
+          32
+        ]
+      ]
+    },
+    "ilpd": {},
+    "ckd": {}
+  },
+  "rules": {
+    "cleveland": [
+      {
+        "id": "CLEV_TARGET_01",
+        "conditions": [
+          "age_at_least_55",
+          "chol_elevated"
+        ],
+        "target": "cleveland",
+        "cf": 0.55,
+        "conclusion": "Tuổi và cholesterol hỗ trợ lớp dương Cleveland"
+      },
+      {
+        "id": "CLEV_SECONDARY_01",
+        "conditions": [
+          "chol_elevated"
+        ],
+        "target": null,
+        "cf": 0.4,
+        "conclusion": "Cholesterol toàn phần vượt mốc tham chiếu của đồ án"
+      }
+    ],
+    "pima": [
+      {
+        "id": "PIMA_TARGET_01",
+        "conditions": [
+          "age_35_to_70",
+          "bmi_elevated"
+        ],
+        "target": "pima",
+        "cf": 0.5,
+        "conclusion": "Tuổi và BMI hỗ trợ lớp dương Pima"
+      },
+      {
+        "id": "PIMA_TARGET_02",
+        "conditions": [
+          "age_35_to_70",
+          "bmi_higher"
+        ],
+        "target": "pima",
+        "cf": 0.55,
+        "conclusion": "Tuổi và mức BMI cao hơn hỗ trợ lớp dương Pima"
+      }
+    ],
+    "ilpd": [],
+    "ckd": []
+  },
+  "source_sha256": {
+    "cleveland": "a74b7efa387bc9d108d7d0115d831fe9b414b29ae7124f331b622b4efa0427c8",
+    "pima": "4eddd5b2b64679e8888348e306520a393d6a28e1ddc9643cfb76fc5d912d6d40",
+    "ilpd": "84feac16488de5cf89bd22bd802c77f25841fe93e9ddd32355683e94d46c3425",
+    "ckd": "0eeea8d17f5ad8792d854999d6ddf1602ec4e116616f6ccdfdaef0ba8109e694"
+  },
+  "method_sha256": {
+    "data_pipeline.py": "ea21efcdd0d11386e28139a96450c9aa566dbfea99827918969595786f0aadf5",
+    "dataset_loaders.py": "cc91ec085f5a2cca5f4130c994e97de11a66eb8abb9d8c55b9cd907ade26dbf9",
+    "dataset_registry.py": "327e69e419a3267494620f6e057ccb31c388edfc6f555af1bb4336e3b31316d1",
+    "ilpd_loader.py": "b6122cc48601fdac8b779e0b3b26b115a8f99fbca3733751fe6b2102fc2511d4",
+    "ckd_loader.py": "7712e09362c89e44a1319846fea9f0e5be298d124452127bff386246672735d5",
+    "experiment_metrics.py": "96d8af591f0cb14f2c70e97fe2b138814d4d176d4db9bf7dd7164a42a5452602",
+    "math_ml_from_scratch.py": "7de271ba0738cf790fed03157409d91b45566f9acc157b864935e229cec39fcd",
+    "model_runtime.py": "0a41b5e657c9e40322d330482765584fe7b7309e04e6ba397b5518ce655fa4a4",
+    "fuzzy_engine.py": "efedbf15de3a368a131ba761008545e6675d1df86e5fe47834e347ee68df381e",
+    "research_rules.py": "8e0ec52b3705db1117a9d4007d7643d3bb62bcbdccdc008cf4f3e03ffea2fc1a",
+    "fusion.py": "eabb96130e96e6cee3e4e0738b1b7514299ec74732d9f06fe67278e8f86bc185",
+    "scripts/train.py": "21d81b6aaf5b08413e34ad269978f8953faa326be864990570e27e6ad90e755c",
+    "scripts/ablation.py": "881a66144307036e9bb0971db4c6ada803f64cb494d308171c03c85897881cd7",
+    "scripts/validate_ablation.py": "a16f80c834f11bf0e098729d7c1a750b52fd6277a067cc1f8fc3e0c7dcd1a0b9",
+    "scripts/evaluate.py": "acb318925d07979bd4b5dfae77b6472b4855d7401747fc6a77756713983bc16f",
+    "docs/t04_split_manifest.json": "dd8f0de93721fb17930bdbfc073a131abc8086e9ab649891ab51f9ef026a8c3e",
+    "docs/t05_split_manifest.json": "231279a97bd8600aa7a4850b8af08e296bfb56b3963ad970dc48efde0c20a9b3"
+  },
+  "cv_sha256": {
+    "models.json": "c0bebcf709ef55197accbe4d86ca136b70ce112d38a73bd3f74366e26ef08752",
+    "split_manifest.json": "bcdaa0e08fcf307c974d57f805c2c5084c67e8e845569e93347783f0088fa260",
+    "predictions.csv": "97a5d4978c732bf7aeb5fc49de797806cec9d569056fa558cfec7dc9b17cf849"
+  },
+  "validation_metadata_sha256": "f425f6ae1ce8414acb69290602fab576537e2566fc08fef58361def16463446f"
+}
