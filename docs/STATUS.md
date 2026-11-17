@@ -16,6 +16,7 @@ Cập nhật ngày **18/11/2026**.
 - T05 đã nghiệm thu loader ILPD và CKD cùng pipeline. ILPD còn 570 mẫu (164 âm, 406 dương) sau khi loại 13 dòng trùng toàn bộ. CKD có 400 mẫu (150 âm, 250 dương), thiếu 17 creatinine, 12 huyết áp và 9 tuổi. [Hồ sơ nguồn T05](T05_DATA_SOURCES.md) · [Metadata JSON](t05_dataset_metadata.json) · [Manifest JSON](t05_split_manifest.json)
 
 - T06–T13 đã nghiệm thu. Đã lưu đầu ra CV, validation và holdout ở `results/`, phân tích lỗi theo ID và chuẩn bị sáu ca demo được chạy trên Chrome. [Kết quả T10](T10_HOLDOUT.md) · [Phân tích lỗi](T12_ERROR_ANALYSIS.md) · [Demo](T13_DEMO.md)
+- T15 đã nghiệm thu. Bản xuất sạch từ Git chạy 46/46 kiểm thử với môi trường Python 3.12 mới, tái tạo artifact T06 và metadata T09 khớp khóa T10, chạy thành công bốn nhóm với SQLite tạm. [Hướng dẫn bàn giao](../README.md)
 
 ## Giới hạn cần ghi trong báo cáo
 - OpenML gắn nhãn `Public` cho Pima #37 và có điều khoản về nghiên cứu riêng do người tải cấp. Quyền của bên tải ban đầu và quyền tái phân phối bản gốc vẫn chưa được xác nhận. Cột `plas` là glucose huyết tương hai giờ OGTT, đơn vị riêng của cột chưa xác nhận. Hai giới hạn đã ghi trong [hồ sơ nguồn](T03_DATA_SOURCES.md).
@@ -36,7 +37,7 @@ Cập nhật ngày **18/11/2026**.
 
 ## Bước tiếp theo
 
-Hoàn tất **T15** bằng [hướng dẫn bàn giao](../README.md) và kiểm tra một bản xuất sạch từ Git. Run holdout `t10-test-seed42` đã chạy với [khóa cấu hình](t10_lock.json) được commit trước đánh giá. Các mô hình đã khóa là Gaussian NB (Cleveland), KNN (Pima), Logistic Regression (ILPD) và Decision Tree (CKD).
+Các mục bắt buộc đã nghiệm thu. Dùng [README](../README.md) để chạy lại pipeline và [sáu ca demo](T13_DEMO.md) khi trình bày. Run holdout `t10-test-seed42` đã chạy với [khóa cấu hình](t10_lock.json) được commit trước đánh giá. Các mô hình đã khóa là Gaussian NB (Cleveland), KNN (Pima), Logistic Regression (ILPD) và Decision Tree (CKD).
 
 Khi nghiệm thu một task, thêm một dòng vào bảng dưới và đánh dấu mục tương ứng trong TASKS.
 
@@ -56,3 +57,5 @@ Khi nghiệm thu một task, thêm một dòng vào bảng dưới và đánh d�
 | T11 | `51c62a4` | Test API và DOM pass. Chrome kiểm tra cả bốn form, dữ kiện chưa biết, trace và lịch sử trên SQLite tạm. | [Giao diện](../templates/index.html), [fixture DOM](../tests/test_trace_ui.py) | T13 |
 | T12 | `aa35a37` | Đối chiếu ca sai và ca bất đồng bằng CSV theo ID. Hệ số đọc từ Logistic Regression fit trên train. | [Phân tích](T12_ERROR_ANALYSIS.md), [biểu đồ](t12_logistic_coefficients.svg) | T15 |
 | T13 | `e9210b1` | Sáu ca tự tạo chạy qua form Chrome với artifact T06 và DB tạm, có ảnh kết quả và lỗi ngoài miền. | [Kịch bản và ảnh](T13_DEMO.md) | T15 |
+| T14 | — | Quyết định bỏ phần fuzzy liên tục trước khi chạy holdout. | [Khóa T10](t10_lock.json) | — |
+| T15 | `539b442` | `uv venv --python 3.12` và `uv pip sync` thành công trong môi trường mới. Bản xuất từ `git archive` chạy 46/46 test, tái lập T06/T09 khớp khóa T10, bốn form chạy trên Chrome và trang lịch sử đọc từ DB tạm. Đã đối chiếu các số báo cáo với CSV/JSON và kiểm tra liên kết. | [README](../README.md), [kết quả holdout](T10_HOLDOUT.md) | Bàn giao |
