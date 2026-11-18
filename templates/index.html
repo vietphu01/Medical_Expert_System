@@ -1,358 +1,73 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <title>Hệ Thống Hỗ Trợ Chuẩn Đoán Đa Bệnh</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { background: #f0f2f5; }
-        .disease-tab { cursor: pointer; padding: 12px 20px; border-radius: 10px; background: white; margin: 5px; transition: 0.3s; border: 2px solid transparent; }
-        .disease-tab:hover { transform: translateY(-2px); }
-        .disease-tab.active { border-color: #0d6efd; background: #e7f1ff; }
-        .card { box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: none; margin-bottom: 15px; }
-        .metric-badge { font-size: 12px; }
-    </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bàn suy luận · Hệ chuyên gia y khoa</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='workspace.css') }}">
+    <script defer src="{{ url_for('static', filename='workspace.js') }}"></script>
 </head>
-<body class="container py-4">
-    <h2 class="text-center mb-4">🏥 Hệ Chuyên Gia Hỗ Trợ Chẩn Đoán Đa Bệnh</h2>
-    <p class="text-center text-muted">Kết hợp ML tự viết + Hệ chuyên gia + Logic mờ | Đồ án 4</p>
-
-    <!-- Tabs chọn bệnh -->
-    <div id="diseaseTabs" class="d-flex flex-wrap justify-content-center mb-4"></div>
-
-    <div class="row">
-        <!-- Cột trái: Form -->
-        <div class="col-md-5">
-            <div class="card">
-                <div class="card-header bg-primary text-white"><strong id="formTitle">Nhập thông tin</strong></div>
-                <div class="card-body">
-                    <form id="diagnosisForm" novalidate></form>
-                </div>
-            </div>
+<body>
+<header class="masthead">
+    <div class="wrap mast-inner">
+        <a class="brand" href="#workspace"><span class="brand-mark" aria-hidden="true"></span>Hệ chuyên gia y khoa</a>
+        <nav aria-label="Các khu vực"><a href="#workspace">Suy luận</a><a href="#models">Mô hình</a><a href="#history">Lịch sử</a></nav>
+    </div>
+</header>
+<main class="wrap">
+    <section id="workspace" aria-labelledby="workspaceTitle">
+        <div class="intro">
+            <h1 id="workspaceTitle">Bàn suy luận</h1>
+            <p>Chọn bộ dữ liệu, nhập ca mẫu và xem cách mô hình cùng hệ luật tạo ra kết quả.</p>
         </div>
-
-        <!-- Cột phải: Kết quả -->
-        <div class="col-md-7">
-            <div class="card">
-                <div class="card-header bg-success text-white"><strong>Kết quả hỗ trợ</strong></div>
-                <div class="card-body">
-                    <div id="emptyState" class="text-center text-muted py-5">Chọn bệnh và nhập thông tin để bắt đầu</div>
-                    <div id="loading" class="text-center d-none py-3">
-                        <div class="spinner-border text-primary"></div><p class="mt-2">Đang suy diễn...</p>
+        <div id="diseaseTabs" role="group" aria-label="Chọn nhóm bệnh"></div>
+        <div class="columns">
+            <section class="panel form-panel" aria-labelledby="formTitle">
+                <header class="panel-heading"><span class="kicker" id="groupName">Ca mẫu</span><h2 id="formTitle">Chỉ số đầu vào</h2></header>
+                <form id="diagnosisForm" novalidate><p role="status">Đang tải biểu mẫu…</p></form>
+            </section>
+            <section class="panel output-panel" aria-labelledby="outputTitle">
+                <header class="panel-heading"><span class="kicker" id="outputDataset">Suy luận</span><h2 id="outputTitle" tabindex="-1">Kết quả hỗ trợ</h2></header>
+                <div id="emptyState" class="waiting">
+                    <div class="flow" aria-hidden="true">
+                        <div class="branches"><span>Mô hình ML</span><span>Luật đích</span></div>
+                        <div class="join"></div><span class="terminal">Điểm hỗ trợ</span>
                     </div>
-                    <div id="resultSection" class="d-none">
-                        <h5>1. Chỉ số gốc</h5>
-                        <ul id="traceInputs" class="list-group mb-3"></ul>
-                        <h5>2. Fact từ chỉ số gốc</h5>
-                        <ul id="traceFacts" class="list-group mb-3"></ul>
-                        <h5>3. Luật đã khớp</h5>
-                        <ul id="traceRules" class="list-group mb-3"></ul>
-                        <h5>4. Kết quả hỗ trợ</h5>
-                        <div id="traceResult" role="status"></div>
-                    </div>
+                    <h3>Chờ chạy suy luận</h3><p>Kiểm tra các chỉ số rồi chọn <strong>Chạy suy luận</strong> để xem điểm và các luật đã khớp.</p>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- So sánh 5 mô hình -->
-    <div class="card mt-3">
-        <div class="card-header bg-dark text-white"><strong>📊 So sánh mô hình Machine Learning — CV trên tập train</strong></div>
-        <div class="card-body">
-            <p id="modelStatus" role="status" class="text-muted"></p>
-            <div class="row">
-                <div class="col-md-7"><canvas id="modelChart" height="180"></canvas></div>
-                <div class="col-md-5">
-                    <table class="table table-sm table-hover text-center" id="modelTable">
-                        <thead><tr><th>Model</th><th>Accuracy CV</th><th>F1 CV</th><th>F1 CV ± độ lệch chuẩn</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
+                <p id="loading" role="status" hidden>Đang tính điểm và đối chiếu luật…</p>
+                <div id="resultSection" hidden>
+                    <div id="traceResult" class="scoreboard" role="status"></div>
+                    <details class="trace" open><summary>Giải thích kết quả</summary>
+                        <h3>Chỉ số đã gửi</h3><ul id="traceInputs"></ul>
+                        <h3>Dữ kiện suy ra</h3><ul id="traceFacts"></ul>
+                        <h3>Luật đã khớp</h3><ul id="traceRules"></ul>
+                    </details>
                 </div>
-            </div>
-            <hr>
-            <h6>🌳 Luật IF-THEN sinh tự động từ Decision Tree:</h6>
-            <pre id="treeRules" style="font-size: 12px; background: #f8f9fa; padding: 15px; border-radius: 8px; max-height: 250px; overflow-y: auto;"></pre>
+                <p class="scope">Điểm hỗ trợ cho lớp dương của bộ dữ liệu chưa được hiệu chỉnh thành xác suất mắc bệnh.</p>
+            </section>
         </div>
-    </div>
-
-    <!-- Lịch sử -->
-    <div class="card mt-3">
-        <div class="card-header bg-secondary text-white"><strong>📜 Lịch sử chẩn đoán</strong></div>
-        <div class="card-body p-0">
-            <table class="table table-sm table-striped mb-0 text-center">
-                <thead><tr><th>ID</th><th>Bệnh</th><th>Điểm ML</th><th>Mức độ cũ</th><th>Thời gian</th></tr></thead>
-                <tbody id="historyBody"></tbody>
-            </table>
+    </section>
+    <section id="models" class="panel wide" aria-labelledby="modelsTitle">
+        <header><span class="kicker" id="modelDataset">Thực nghiệm</span><h2 id="modelsTitle">So sánh mô hình</h2>
+            <p>Trung bình qua 5 fold trên tập train. Các chỉ số tính theo %, độ lệch chuẩn F1 tính theo điểm phần trăm.</p></header>
+        <p id="modelStatus" role="status">Đang tải mô hình…</p>
+        <div class="table-scroll" tabindex="0" aria-label="Bảng chỉ số mô hình">
+            <table id="modelTable"><thead><tr><th scope="col">Mô hình</th><th scope="col">F1 ± độ lệch chuẩn</th><th scope="col">Accuracy</th><th scope="col">Precision</th><th scope="col">Recall</th><th scope="col">ROC-AUC</th></tr></thead><tbody></tbody></table>
         </div>
-    </div>
-
-    <script>
-        let currentDisease = 'heart';
-        let DISEASES = {};
-        let modelChart;
-
-        // ===== LOAD DISEASES =====
-        async function loadDiseases() {
-            const res = await fetch('/api/diseases');
-            DISEASES = await res.json();
-            const tabs = document.getElementById('diseaseTabs');
-            tabs.innerHTML = '';
-            Object.keys(DISEASES).forEach(k => {
-                const d = DISEASES[k];
-                const div = document.createElement('div');
-                div.className = 'disease-tab' + (k === currentDisease ? ' active' : '');
-                div.innerHTML = `<span style="font-size:20px">${d.icon}</span> <strong>${d.name}</strong>`;
-                div.onclick = () => selectDisease(k);
-                tabs.appendChild(div);
-            });
-            renderForm();
-            loadModelStats();
-        }
-
-        function selectDisease(key) {
-            currentDisease = key;
-            document.querySelectorAll('.disease-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.disease-tab')[Object.keys(DISEASES).indexOf(key)].classList.add('active');
-            renderForm();
-            loadModelStats();
-            document.getElementById('resultSection').classList.add('d-none');
-            document.getElementById('loading').classList.add('d-none');
-            document.getElementById('emptyState').classList.remove('d-none');
-        }
-
-        // ===== RENDER FORM ĐỘNG =====
-        function renderForm() {
-            const d = DISEASES[currentDisease];
-            document.getElementById('formTitle').innerText = `${d.icon} ${d.name}`;
-            const form = document.getElementById('diagnosisForm');
-            form.innerHTML = '<p class="text-muted">Để trống chỉ số chưa biết; ML dùng giá trị điền từ tập huấn luyện, luật giữ trạng thái chưa biết.</p>';
-            d.fields.forEach(f => {
-                form.innerHTML += `
-                    <div class="mb-2">
-                        <label class="form-label" for="field_${f.key}">${f.label}</label>
-                        <input type="number" class="form-control" id="field_${f.key}" name="inputs.${f.key}"
-                            min="${f.min}" max="${f.max}" value="${f.default}" step="${f.step || 1}">
-                    </div>`;
-            });
-            if (Object.keys(d.symptoms || {}).length) {
-                form.insertAdjacentHTML('beforeend', '<p class="text-muted">Triệu chứng dưới đây hiện chưa tham gia các luật đích.</p>');
-            }
-            Object.entries(d.symptoms || {}).forEach(([key, label]) => {
-                form.innerHTML += `
-                    <div class="mb-2">
-                        <label class="form-label" for="extra_${key}">${label}</label>
-                        <select class="form-select" id="extra_${key}" name="extra_facts.${key}">
-                            <option value="false">Không</option><option value="true">Có</option>
-                        </select>
-                    </div>`;
-            });
-            form.innerHTML += `
-                <ul id="diagnosisErrors" class="alert alert-danger d-none list-unstyled mb-2" role="alert"></ul>
-                <button type="submit" class="btn btn-success w-100 mt-2">🔬 Chạy suy luận</button>`;
-            form.onsubmit = runDiagnosis;
-        }
-
-        function clearDiagnosisErrors(form) {
-            const list = form.querySelector('#diagnosisErrors');
-            list.replaceChildren();
-            list.classList.add('d-none');
-            form.querySelectorAll('.is-invalid').forEach(input => {
-                input.classList.remove('is-invalid');
-                input.removeAttribute('aria-invalid');
-                input.removeAttribute('aria-describedby');
-            });
-        }
-
-        function showDiagnosisErrors(form, errors) {
-            const list = form.querySelector('#diagnosisErrors');
-            Object.entries(errors).forEach(([field, message]) => {
-                const item = document.createElement('li');
-                item.textContent = message;
-                list.appendChild(item);
-
-                const input = form.elements.namedItem(field);
-                if (input) {
-                    input.classList.add('is-invalid');
-                    input.setAttribute('aria-invalid', 'true');
-                    input.setAttribute('aria-describedby', list.id);
-                }
-            });
-            list.classList.remove('d-none');
-            document.getElementById('emptyState').classList.remove('d-none');
-        }
-
-        // ===== CHẨN ĐOÁN =====
-        async function runDiagnosis(e) {
-            e.preventDefault();
-            const form = e.currentTarget;
-            const submitButton = form.querySelector('button[type="submit"]');
-            if (submitButton.disabled) return;
-            const disease = currentDisease;
-            const d = DISEASES[disease];
-            const inputs = {};
-            d.fields.forEach(f => {
-                const value = form.elements.namedItem(`inputs.${f.key}`).value;
-                inputs[f.key] = value.trim() === '' ? null : value;
-            });
-            const extra_facts = {};
-            Object.keys(d.symptoms || {}).forEach(key => {
-                extra_facts[key] = form.elements.namedItem(`extra_facts.${key}`).value === 'true';
-            });
-
-            clearDiagnosisErrors(form);
-            submitButton.disabled = true;
-            document.getElementById('emptyState').classList.add('d-none');
-            document.getElementById('loading').classList.remove('d-none');
-            document.getElementById('resultSection').classList.add('d-none');
-
-            let data, errors;
-            try {
-                const res = await fetch('/api/diagnose', {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ disease, inputs, extra_facts })
-                });
-                data = await res.json();
-                if (!res.ok) {
-                    errors = data?.errors || {body: 'Không thể xử lý yêu cầu chẩn đoán.'};
-                }
-            } catch {
-                errors = {body: 'Không nhận được phản hồi hợp lệ. Vui lòng thử lại.'};
-            }
-
-            if (!form.contains(submitButton)) {
-                if (!errors) loadHistory();
-                return;
-            }
-            submitButton.disabled = false;
-            document.getElementById('loading').classList.add('d-none');
-            if (errors) {
-                showDiagnosisErrors(form, errors);
-                return;
-            }
-            document.getElementById('resultSection').classList.remove('d-none');
-            
-            renderTrace(data.trace, d);
-
-            loadHistory();
-        }
-
-        function appendTraceItem(list, text) {
-            const item = document.createElement('li');
-            item.className = 'list-group-item';
-            item.textContent = text;
-            list.appendChild(item);
-        }
-
-        function renderTrace(trace, disease) {
-            const inputs = document.getElementById('traceInputs');
-            const facts = document.getElementById('traceFacts');
-            const rules = document.getElementById('traceRules');
-            const result = document.getElementById('traceResult');
-            inputs.replaceChildren(); facts.replaceChildren(); rules.replaceChildren(); result.replaceChildren();
-            const valueText = value => value === null ? 'Chưa biết' : String(value);
-            const percent = value => value === null ? 'Chưa có' : `${(value * 100).toFixed(1)}%`;
-            disease.fields.forEach(field => {
-                const fact = trace.facts.find(item => item.feature === field.key);
-                appendTraceItem(inputs, `${field.label}: ${valueText(fact ? fact.value : null)}`);
-            });
-            const derived = trace.facts.filter(fact => fact.key !== null);
-            if (!derived.length) appendTraceItem(facts, 'Chưa có fact được định nghĩa cho nhóm này.');
-            derived.forEach(fact => {
-                const state = fact.value_boolean === null ? 'Chưa biết' : (fact.value_boolean ? 'Đúng' : 'Sai');
-                appendTraceItem(facts, `${fact.feature} → ${fact.key}: ${state}; mức liên thuộc ${percent(fact.membership)}`);
-            });
-            if (!trace.fired_rules.length) appendTraceItem(rules, 'Không có luật nào khớp.');
-            trace.fired_rules.forEach(rule => appendTraceItem(
-                rules, `${rule.id}: ${rule.conditions.join(' và ')} → ${rule.conclusion}; CF ${percent(rule.cf)}; ${rule.used_in_fusion ? 'dùng trong gộp' : 'luật phụ'}`
-            ));
-            const lines = [
-                `Đích dữ liệu: ${trace.target}`,
-                `ML (${trace.ml.model}): ${percent(trace.ml.score)}`,
-                trace.result.rule_status === 'no_matching_target_rule'
-                    ? 'Không có luật đích nào khớp với dữ kiện đã nhập.'
-                    : `Điểm hỗ trợ luật: ${percent(trace.result.rule_score)}`,
-                `Điểm hỗ trợ kết hợp: ${percent(trace.result.combined_score)}`,
-                `Nhãn dự đoán: ${trace.result.predicted_label}`,
-            ];
-            lines.forEach(text => { const p = document.createElement('p'); p.textContent = text; result.appendChild(p); });
-        }
-
-        // ===== SO SÁNH MODEL =====
-        async function loadModelStats() {
-            const disease = currentDisease;
-            const tbody = document.querySelector('#modelTable tbody');
-            const status = document.getElementById('modelStatus');
-            tbody.replaceChildren();
-            status.textContent = 'Đang tải thông tin mô hình…';
-            document.getElementById('treeRules').textContent = '';
-            if (modelChart) { modelChart.destroy(); modelChart = null; }
-            let data;
-            try {
-                const res = await fetch(`/api/model_stats/${disease}`);
-                data = await res.json();
-                if (disease !== currentDisease) return;
-                if (!res.ok) {
-                    status.textContent = data?.errors?.model || 'Không tải được thông tin mô hình.';
-                    return;
-                }
-            } catch {
-                if (disease === currentDisease) status.textContent = 'Không tải được thông tin mô hình.';
-                return;
-            }
-            status.textContent = `Mô hình được chọn: ${data.selected_model}. Các chỉ số là trung bình CV trên tập train (%).`;
-
-            // Bảng
-            tbody.innerHTML = '';
-            data.stats.forEach(s => {
-                tbody.innerHTML += `<tr>
-                    <td class="text-start">${s.name}</td>
-                    <td><span class="badge bg-info">${s.accuracy}</span></td>
-                    <td><span class="badge bg-success">${s.f1}</span></td>
-                    <td><span class="badge bg-warning text-dark">${s.cv_mean}±${s.cv_std}</span></td>
-                </tr>`;
-            });
-            
-            // Chart so sánh
-            if (modelChart) modelChart.destroy();
-            modelChart = new Chart(document.getElementById('modelChart'), {
-                type: 'bar',
-                data: {
-                    labels: data.stats.map(s => s.name),
-                    datasets: [
-                        { label: 'Accuracy CV', data: data.stats.map(s => s.accuracy), backgroundColor: '#0d6efd' },
-                        { label: 'Precision CV', data: data.stats.map(s => s.precision), backgroundColor: '#198754' },
-                        { label: 'Recall CV', data: data.stats.map(s => s.recall), backgroundColor: '#ffc107' },
-                        { label: 'F1 CV', data: data.stats.map(s => s.f1), backgroundColor: '#dc3545' }
-                    ]
-                },
-                options: { 
-                    responsive: true,
-                    scales: { y: { max: 100, beginAtZero: true } },
-                    plugins: { legend: { position: 'bottom' } }
-                }
-            });
-            
-            // Tree rules
-            document.getElementById('treeRules').innerText = data.tree_rules;
-        }
-
-        // ===== HISTORY =====
-        async function loadHistory() {
-            const res = await fetch('/api/history');
-            const data = await res.json();
-            const tbody = document.getElementById('historyBody');
-            tbody.innerHTML = '';
-            data.forEach(r => {
-                tbody.innerHTML += `<tr>
-                    <td>${r[0]}</td><td>${DISEASES[r[1]]?.name || r[1]}</td>
-                    <td>${(r[3]*100).toFixed(1)}%</td><td>${r[4]}</td>
-                    <td>${r[6]?.split('.')[0] || ''}</td></tr>`;
-            });
-        }
-
-        loadDiseases();
-        loadHistory();
-    </script>
+        <details id="treeSection" hidden><summary>Quy tắc trích từ cây quyết định</summary>
+            <p>Các ngưỡng dưới đây dùng chỉ số đã chuẩn hóa theo train và được làm tròn. Class là lớp phổ biến tại lá. Khi hai lớp bằng nhau, bản trích ghi 0 còn bộ phân loại trả nhãn 1 ở điểm 0,5.</p>
+            <pre id="treeRules"></pre>
+        </details>
+    </section>
+    <section id="history" class="panel wide" aria-labelledby="historyTitle">
+        <header><span class="kicker">SQLite · 10 lượt gần nhất</span><h2 id="historyTitle">Lịch sử suy luận</h2>
+            <p>Mỗi lượt lưu điểm riêng của mô hình ML trước khi gộp luật.</p></header>
+        <div class="table-scroll" tabindex="0" aria-label="Bảng lịch sử">
+            <table><thead><tr><th scope="col">Mã lượt</th><th scope="col">Nhóm bệnh</th><th scope="col">Điểm ML</th><th scope="col">Thời gian (UTC)</th></tr></thead>
+                <tbody id="historyBody"></tbody></table>
+        </div>
+    </section>
+</main>
 </body>
 </html>

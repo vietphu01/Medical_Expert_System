@@ -5,7 +5,7 @@ from math import isfinite
 from flask import Flask, render_template, request, jsonify
 import sqlite3
 from diseases_config import DISEASES
-from research_rules import evaluate_rules
+from research_rules import RULES, evaluate_rules
 from fusion import make_trace
 from model_runtime import NAMES, load_run
 
@@ -45,8 +45,12 @@ def home(): return render_template('index.html')
 
 @app.route('/api/diseases')
 def list_diseases():
-    return jsonify({k: {kk: vv for kk, vv in v.items() if kk in ['name', 'icon', 'fields', 'symptoms']}
-                    for k, v in DISEASES.items()})
+    catalog = {}
+    for key, disease in DISEASES.items():
+        dataset = DATASET_BY_DISEASE[key]
+        catalog[key] = {k: v for k, v in disease.items() if k in ('name', 'icon', 'fields', 'symptoms')}
+        catalog[key].update(dataset=dataset, has_target_rules=any(rule['target'] == dataset for rule in RULES[dataset]))
+    return jsonify(catalog)
 
 @app.route('/api/model_stats/<dkey>')
 def model_stats(dkey):
@@ -59,6 +63,7 @@ def model_stats(dkey):
         "stats": model.stats,
         "tree_rules": model.tree_rules,
         "selected_model": model.variant,
+        "selected_model_name": NAMES.get(model.variant, model.variant),
         "evaluation": "train_cv",
     })
 
@@ -168,7 +173,7 @@ def diagnose():
 @app.route('/api/history')
 def get_history():
     with closing(sqlite3.connect(app.config['DATABASE'])) as conn:
-        rows = conn.execute("SELECT * FROM history ORDER BY timestamp DESC LIMIT 10").fetchall()
+        rows = conn.execute("SELECT * FROM history ORDER BY timestamp DESC, id DESC LIMIT 10").fetchall()
     return jsonify(rows)
 
 if __name__ == '__main__':

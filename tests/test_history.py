@@ -78,6 +78,16 @@ class HistoryTests(unittest.TestCase):
                 with closing(sqlite3.connect(db_path)) as conn:
                     self.assertEqual(conn.execute('SELECT * FROM history').fetchall(), [record])
 
+    def test_latest_ten_include_newest_id_when_times_match(self):
+        db_path = self.directory / 'same-second.db'
+        self.enterContext(patch.dict(self.module.app.config, DATABASE=str(db_path)))
+        self.module.init_db()
+        with closing(sqlite3.connect(db_path)) as conn, conn:
+            conn.executemany('INSERT INTO history (id, timestamp) VALUES (?, ?)',
+                             [(i, '2026-01-01 00:00:00') for i in range(1, 12)])
+        rows = self.module.app.test_client().get('/api/history').get_json()
+        self.assertEqual([row[0] for row in rows], list(range(11, 1, -1)))
+
     def test_diagnose_and_history_share_configured_database(self):
         db_path = self.directory / 'routes.db'
         self.enterContext(patch.dict(self.module.app.config, DATABASE=str(db_path)))

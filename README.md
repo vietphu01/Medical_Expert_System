@@ -2,6 +2,8 @@
 
 Đồ án Flask, SQLite và các mô hình ML tự viết bằng NumPy cho bốn bộ dữ liệu tim mạch, tiểu đường, gan và thận. Ứng dụng trình bày điểm hỗ trợ và trace chỉ số → fact → luật → kết quả. Đây là công cụ nghiên cứu, không phải hệ thống chẩn đoán y khoa.
 
+[Đánh giá đồ án và hướng tự cải thiện](docs/REVIEW.md) · [Sáu ca demo](docs/T13_DEMO.md)
+
 ## Cài đặt
 
 Cần Python 3.12, `uv` và Node.js nếu muốn chạy kiểm thử giao diện dùng DOM giả lập. Chạy từ thư mục gốc:
@@ -12,7 +14,7 @@ uv pip sync --python .venv/bin/python requirements.txt
 .venv/bin/python -B -m unittest discover -s tests -v
 ```
 
-Các test ứng dụng dùng SQLite tạm và fixture tự tạo. Test giao diện dùng Node.js được bỏ qua nếu không có Node. Frontend tải Bootstrap và Chart.js từ CDN; cần kết nối mạng để tải các tài nguyên này.
+Các test ứng dụng dùng SQLite tạm và fixture tự tạo. Test giao diện dùng Node.js được bỏ qua nếu không có Node. Flask phục vụ CSS và JavaScript cục bộ. Khi đã có môi trường và artifact mô hình, cả bốn form, bảng CV và lịch sử đều dùng được ngoại tuyến.
 
 ## Dữ liệu nguồn
 
