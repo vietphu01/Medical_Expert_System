@@ -59,3 +59,9 @@ Khi nghiệm thu một task, thêm một dòng vào bảng dưới và đánh d�
 | T13 | `e9210b1` | Sáu ca tự tạo chạy qua form Chrome với artifact T06 và DB tạm, có ảnh kết quả và lỗi ngoài miền. | [Kịch bản và ảnh](T13_DEMO.md) | T15 |
 | T14 | — | Quyết định bỏ phần fuzzy liên tục trước khi chạy holdout. | [Khóa T10](t10_lock.json) | — |
 | T15 | `539b442` | `uv venv --python 3.12` và `uv pip sync` thành công trong môi trường mới. Bản xuất từ `git archive` chạy 46/46 test, tái lập T06/T09 khớp khóa T10, bốn form chạy trên Chrome và trang lịch sử đọc từ DB tạm. Đã đối chiếu các số báo cáo với CSV/JSON và kiểm tra liên kết. | [README](../README.md), [kết quả holdout](T10_HOLDOUT.md) | Bàn giao |
+
+## Sau bàn giao · Review và GUI
+
+Commit `0f85450` cập nhật GUI, [bản review](REVIEW.md) và [sáu ca demo](T13_DEMO.md). Lệnh `.venv/bin/python -B -m unittest discover -s tests -q` pass 47/47. `node --check static/workspace.js` và `git diff --cached --check` pass. Chrome headless chạy với Flask trên loopback, artifact T06 và SQLite tạm. Đã kiểm tra sáu fixture T13, bốn nhóm bệnh, trường hợp thiếu toàn bộ đầu vào và chiều rộng 390 px. Các ca demo cho điểm đúng như kịch bản, giao diện tải tài nguyên cục bộ.
+
+Đã đối chiếu mã phương pháp và artifact theo khóa T10, cùng hai checksum CSV holdout đã công bố. Bước tiếp theo là luyện giải thích tác động lên FN/FP và rà soát miền nhập CKD trên train. Form nhận huyết áp từ 90 mmHg trong khi median train là 80 mmHg. Xem cách đếm và giới hạn trong [bản review](REVIEW.md).

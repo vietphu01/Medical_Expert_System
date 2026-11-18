@@ -28,3 +28,7 @@
 ## Tuần 4 · Hoàn thiện
 
 - [x] **T15 · Tái lập và bàn giao.** Xong khi môi trường mới chạy được theo README, lệnh test pass, giao diện bốn nhóm chạy bằng ca mẫu và số trong báo cáo đối chiếu được với CSV/JSON. Báo cáo nêu giới hạn của dữ liệu nhỏ, quần thể Pima, luật và điểm chưa hiệu chỉnh.
+
+## Sau bàn giao · Review và GUI
+
+- [x] Rà soát dữ liệu, mô hình, luật, kết quả và ứng dụng. Bàn giao [đánh giá cùng ba bài tự cải thiện](REVIEW.md), GUI ngoại tuyến và sáu ảnh demo mới. [Bằng chứng nghiệm thu](STATUS.md)
