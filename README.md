@@ -2,7 +2,7 @@
 
 Đồ án Flask, SQLite và các mô hình ML tự viết bằng NumPy cho bốn bộ dữ liệu tim mạch, tiểu đường, gan và thận. Ứng dụng trình bày điểm hỗ trợ và trace chỉ số → fact → luật → kết quả. Đây là công cụ nghiên cứu, không phải hệ thống chẩn đoán y khoa.
 
-[Đánh giá đồ án và hướng tự cải thiện](docs/REVIEW.md) · [Sáu ca demo](docs/T13_DEMO.md)
+[Báo cáo dự án từ A đến Z](docs/BAO_CAO_DU_AN.md) · [Đánh giá đồ án và hướng tự cải thiện](docs/REVIEW.md) · [Sáu ca demo](docs/T13_DEMO.md)
 
 ## Cài đặt
 
