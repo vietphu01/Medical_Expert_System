@@ -32,3 +32,4 @@
 ## Sau bàn giao · Review và GUI
 
 - [x] Rà soát dữ liệu, mô hình, luật, kết quả và ứng dụng. Bàn giao [đánh giá cùng ba bài tự cải thiện](REVIEW.md), GUI ngoại tuyến và sáu ảnh demo mới. [Bằng chứng nghiệm thu](STATUS.md)
+- [x] Bàn giao [báo cáo dự án từ A đến Z](BAO_CAO_DU_AN.md), gồm tiến trình phát triển, kiến trúc, luồng suy luận, cách vận hành và kết quả thực nghiệm có nguồn đối chiếu.
