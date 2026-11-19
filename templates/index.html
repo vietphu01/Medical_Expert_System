@@ -2,7 +2,16 @@
 <html lang="vi">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <script>
+        try {
+            const saved = localStorage.getItem("color-scheme");
+            if (saved === "light" || saved === "dark") {
+                document.querySelector('meta[name="color-scheme"]').content = saved;
+            }
+        } catch {}
+    </script>
     <title>Bàn suy luận · Hệ chuyên gia y khoa</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='workspace.css') }}">
     <script defer src="{{ url_for('static', filename='workspace.js') }}"></script>
@@ -10,62 +19,248 @@
 <body>
 <header class="masthead">
     <div class="wrap mast-inner">
-        <a class="brand" href="#workspace"><span class="brand-mark" aria-hidden="true"></span>Hệ chuyên gia y khoa</a>
-        <nav aria-label="Các khu vực"><a href="#workspace">Suy luận</a><a href="#models">Mô hình</a><a href="#history">Lịch sử</a></nav>
+        <a class="brand" href="#workspace" data-view-link="workspace">
+            <span class="brand-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+            </span>
+            <span class="brand-text">
+                <strong>Hệ chuyên gia y khoa</strong>
+                <small>ML tự viết × Hệ luật mờ</small>
+            </span>
+        </a>
+
+        <nav class="view-nav" aria-label="Các khu vực chính">
+            <a href="#workspace" data-view-link="workspace" aria-current="page">Suy luận</a>
+            <a href="#models" data-view-link="models">Mô hình CV <span class="nav-count" id="modelCountBadge" hidden></span></a>
+            <a href="#history" data-view-link="history">Lịch sử <span class="nav-count" id="historyCountBadge" hidden></span></a>
+            <button type="button" class="nav-all-btn" id="viewAllToggle" aria-pressed="false">Xem toàn trang</button>
+        </nav>
+
+        <div class="mast-actions">
+            <button type="button" class="icon-btn" id="glossaryTrigger" popovertarget="glossaryPopover" aria-haspopup="dialog">
+                <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <circle cx="10" cy="10" r="8"/>
+                    <path d="M10 9v5M10 6.2h.01" stroke-linecap="round"/>
+                </svg>
+                <span>Thuật ngữ</span>
+            </button>
+            <button type="button" class="icon-btn theme-toggle" id="themeToggle" aria-label="Chuyển giao diện sáng hoặc tối">
+                <span class="theme-opt theme-opt-dark">
+                    <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <path d="M16.5 11.9A6.8 6.8 0 0 1 8.1 3.5a7 7 0 1 0 8.4 8.4Z" stroke-linejoin="round"/>
+                    </svg>
+                    <span class="theme-label">Tối</span>
+                </span>
+                <span class="theme-opt theme-opt-light">
+                    <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                        <circle cx="10" cy="10" r="3.6"/>
+                        <path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M15.3 4.7l-1.4 1.4M6.1 13.9l-1.4 1.4"/>
+                    </svg>
+                    <span class="theme-label">Sáng</span>
+                </span>
+            </button>
+        </div>
     </div>
 </header>
-<main class="wrap">
-    <section id="workspace" aria-labelledby="workspaceTitle">
-        <div class="intro">
-            <h1 id="workspaceTitle">Bàn suy luận</h1>
-            <p>Chọn bộ dữ liệu, nhập ca mẫu và xem cách mô hình cùng hệ luật tạo ra kết quả.</p>
+
+<div id="glossaryPopover" class="glossary-popover" popover="auto" role="dialog" aria-labelledby="glossaryTitle">
+    <header class="popover-head">
+        <h2 id="glossaryTitle">Công thức &amp; quy ước đồ án</h2>
+        <button type="button" class="popover-close" id="glossaryClose" aria-label="Đóng bảng thuật ngữ">✕</button>
+    </header>
+    <dl class="glossary-list">
+        <div>
+            <dt>Phép gộp ML + Luật (gộp mới)</dt>
+            <dd><code>C_rule = 1 − Π(1 − c_i)</code> cho các luật cùng đích, sau đó gộp ML đúng một lần: <code>C_new = C_rule + p × (1 − C_rule)</code>. Nếu không có luật đích khớp, <code>C_new = p</code>.</dd>
         </div>
-        <div id="diseaseTabs" role="group" aria-label="Chọn nhóm bệnh"></div>
+        <div>
+            <dt>Ngưỡng cắt hóa mờ &amp; phân lớp</dt>
+            <dd>Fact mờ được xem là <strong>Đúng</strong> khi mức liên thuộc <code>μ &gt; 50%</code> (đúng biên <code>50%</code> là <strong>Sai</strong>). Nhãn dự đoán là <code>1</code> khi điểm hỗ trợ <code>≥ 50%</code>.</dd>
+        </div>
+        <div>
+            <dt>Xử lý chỉ số chưa biết (<code>null</code>)</dt>
+            <dd>Mô hình ML tự điền bằng <strong>trung vị học từ tập train</strong>. Hệ luật giữ dữ kiện đó ở trạng thái <strong>Chưa biết</strong> và không suy đoán thay.</dd>
+        </div>
+        <div>
+            <dt>Giới hạn diễn giải</dt>
+            <dd>Điểm phần trăm là <strong>điểm hỗ trợ lớp dương</strong> của bộ dữ liệu nghiên cứu, chưa được hiệu chỉnh thành xác suất mắc bệnh lâm sàng.</dd>
+        </div>
+    </dl>
+</div>
+
+<main class="wrap">
+    <section class="hero-strip" aria-labelledby="workspaceTitle">
+        <div class="hero-copy">
+            <span class="kicker">Phòng thí nghiệm suy luận · 4 bộ dữ liệu thật</span>
+            <h1 id="workspaceTitle">Bàn suy luận kết hợp ML &amp; Hệ luật</h1>
+            <p>Thử nghiệm chỉ số đầu vào, quan sát trực tiếp vùng mờ, luật kích hoạt và cách phép gộp điều chỉnh điểm mô hình.</p>
+        </div>
+        <div class="hero-telemetry" aria-live="polite">
+            <button type="button" class="telemetry-pill" id="activeModelPill">
+                <span class="telemetry-dot" aria-hidden="true"></span>
+                <span>
+                    <small>Mô hình đang chạy</small>
+                    <strong id="activeModelBrief">Đang tải…</strong>
+                </span>
+            </button>
+        </div>
+    </section>
+
+    <div id="diseaseTabs" class="dataset-grid" role="group" aria-label="Chọn nhóm bệnh"></div>
+
+    <section id="workspace" class="view-section" data-view="workspace" aria-label="Khu vực nhập liệu và kết quả suy luận">
+        <div class="preset-bar" aria-label="Nạp nhanh kịch bản demo T13">
+            <div class="preset-meta">
+                <span class="preset-title">Kịch bản demo T13</span>
+                <small>6 ca tự tạo ngoài tập test · bấm để nạp và chạy ngay</small>
+            </div>
+            <div id="presetList" class="preset-chips" role="group" aria-label="Danh sách 6 ca mẫu T13"></div>
+        </div>
+
         <div class="columns">
             <section class="panel form-panel" aria-labelledby="formTitle">
-                <header class="panel-heading"><span class="kicker" id="groupName">Ca mẫu</span><h2 id="formTitle">Chỉ số đầu vào</h2></header>
+                <header class="panel-heading panel-heading-row">
+                    <div>
+                        <span class="kicker" id="groupName">Ca mẫu</span>
+                        <h2 id="formTitle">Chỉ số đầu vào</h2>
+                    </div>
+                    <button type="button" class="ghost-btn" id="resetDefaultsBtn">Đặt lại mặc định</button>
+                </header>
                 <form id="diagnosisForm" novalidate><p role="status">Đang tải biểu mẫu…</p></form>
             </section>
+
             <section class="panel output-panel" aria-labelledby="outputTitle">
-                <header class="panel-heading"><span class="kicker" id="outputDataset">Suy luận</span><h2 id="outputTitle" tabindex="-1">Kết quả hỗ trợ</h2></header>
+                <header class="panel-heading panel-heading-row">
+                    <div>
+                        <span class="kicker" id="outputDataset">Suy luận</span>
+                        <h2 id="outputTitle" tabindex="-1">Kết quả hỗ trợ</h2>
+                    </div>
+                    <span id="staleNotice" class="stale-pill" hidden>Đầu vào vừa đổi · bấm chạy lại</span>
+                </header>
+
                 <div id="emptyState" class="waiting">
                     <div class="flow" aria-hidden="true">
-                        <div class="branches"><span>Mô hình ML</span><span>Luật đích</span></div>
-                        <div class="join"></div><span class="terminal">Điểm hỗ trợ</span>
+                        <div class="branches">
+                            <span class="flow-chip">Mô hình ML</span>
+                            <span class="flow-chip">Luật đích</span>
+                        </div>
+                        <div class="join"></div>
+                        <span class="terminal">Điểm hỗ trợ</span>
                     </div>
-                    <h3>Chờ chạy suy luận</h3><p>Kiểm tra các chỉ số rồi chọn <strong>Chạy suy luận</strong> để xem điểm và các luật đã khớp.</p>
+                    <h3>Sẵn sàng chạy suy luận</h3>
+                    <p>Điều chỉnh thanh trượt, thử gạt <strong>Chưa biết</strong> hoặc chọn nhanh một <strong>kịch bản demo T13</strong> ở phía trên.</p>
                 </div>
-                <p id="loading" role="status" hidden>Đang tính điểm và đối chiếu luật…</p>
+
+                <p id="loading" class="loading-bar" role="status" hidden>
+                    <span class="loading-spinner" aria-hidden="true"></span>
+                    <span>Đang tính điểm mô hình và đối chiếu hệ luật…</span>
+                </p>
+
                 <div id="resultSection" hidden>
                     <div id="traceResult" class="scoreboard" role="status"></div>
-                    <details class="trace" open><summary>Giải thích kết quả</summary>
-                        <h3>Chỉ số đã gửi</h3><ul id="traceInputs"></ul>
-                        <h3>Dữ kiện suy ra</h3><ul id="traceFacts"></ul>
-                        <h3>Luật đã khớp</h3><ul id="traceRules"></ul>
+
+                    <section id="livePipeline" class="pipeline-card" aria-label="Sơ đồ luồng suy luận trực tiếp" hidden></section>
+
+                    <details class="trace" open>
+                        <summary>Giải thích chi tiết (Trace)</summary>
+                        <div class="trace-body">
+                            <div class="trace-block">
+                                <h3>1. Chỉ số đã gửi</h3>
+                                <ul id="traceInputs" class="trace-inputs-list"></ul>
+                            </div>
+                            <div class="trace-block">
+                                <h3>2. Hóa mờ &amp; dữ kiện suy ra</h3>
+                                <ul id="traceFacts" class="trace-facts-list"></ul>
+                            </div>
+                            <div class="trace-block">
+                                <h3>3. Luật đã khớp</h3>
+                                <ul id="traceRules" class="trace-rules-list"></ul>
+                            </div>
+                        </div>
                     </details>
                 </div>
+
                 <p class="scope">Điểm hỗ trợ cho lớp dương của bộ dữ liệu chưa được hiệu chỉnh thành xác suất mắc bệnh.</p>
             </section>
         </div>
     </section>
-    <section id="models" class="panel wide" aria-labelledby="modelsTitle">
-        <header><span class="kicker" id="modelDataset">Thực nghiệm</span><h2 id="modelsTitle">So sánh mô hình</h2>
-            <p>Trung bình qua 5 fold trên tập train. Các chỉ số tính theo %, độ lệch chuẩn F1 tính theo điểm phần trăm.</p></header>
+
+    <section id="models" class="panel wide view-section" data-view="models" aria-labelledby="modelsTitle">
+        <header class="section-head">
+            <div>
+                <span class="kicker" id="modelDataset">Thực nghiệm</span>
+                <h2 id="modelsTitle" tabindex="-1">So sánh mô hình (5-fold CV)</h2>
+                <p>Trung bình qua 5 fold trên 80% tập train (seed 42). Các chỉ số tính theo %, độ lệch chuẩn F1 tính theo điểm phần trăm.</p>
+            </div>
+            <div class="metric-switcher" id="chartMetricSwitcher" role="group" aria-label="Chọn chỉ số hiển thị biểu đồ">
+                <button type="button" data-metric="f1" aria-pressed="true">F1 ± std</button>
+                <button type="button" data-metric="roc_auc" aria-pressed="false">ROC-AUC</button>
+                <button type="button" data-metric="accuracy" aria-pressed="false">Accuracy</button>
+                <button type="button" data-metric="precision" aria-pressed="false">Precision</button>
+                <button type="button" data-metric="recall" aria-pressed="false">Recall</button>
+            </div>
+        </header>
+
         <p id="modelStatus" role="status">Đang tải mô hình…</p>
-        <div class="table-scroll" tabindex="0" aria-label="Bảng chỉ số mô hình">
-            <table id="modelTable"><thead><tr><th scope="col">Mô hình</th><th scope="col">F1 ± độ lệch chuẩn</th><th scope="col">Accuracy</th><th scope="col">Precision</th><th scope="col">Recall</th><th scope="col">ROC-AUC</th></tr></thead><tbody></tbody></table>
+        <div id="modelChart" class="chart-card" hidden></div>
+
+        <p id="tableSortStatus" role="status" class="visually-hidden"></p>
+        <div class="table-scroll" role="region" aria-labelledby="modelsTitle" tabindex="0">
+            <table id="modelTable">
+                <caption class="visually-hidden">Bảng so sánh các mô hình ML trên 5-fold cross-validation</caption>
+                <thead>
+                    <tr>
+                        <th scope="col" data-type="text"><button type="button" commandfor="modelTable" command="--sort">Mô hình<span class="sort-icon" aria-hidden="true"></span></button></th>
+                        <th scope="col" data-type="number" aria-sort="descending"><button type="button" commandfor="modelTable" command="--sort">F1 ± độ lệch chuẩn<span class="sort-icon" aria-hidden="true"></span></button></th>
+                        <th scope="col" data-type="number"><button type="button" commandfor="modelTable" command="--sort">Accuracy<span class="sort-icon" aria-hidden="true"></span></button></th>
+                        <th scope="col" data-type="number"><button type="button" commandfor="modelTable" command="--sort">Precision<span class="sort-icon" aria-hidden="true"></span></button></th>
+                        <th scope="col" data-type="number"><button type="button" commandfor="modelTable" command="--sort">Recall<span class="sort-icon" aria-hidden="true"></span></button></th>
+                        <th scope="col" data-type="number"><button type="button" commandfor="modelTable" command="--sort">ROC-AUC<span class="sort-icon" aria-hidden="true"></span></button></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
-        <details id="treeSection" hidden><summary>Quy tắc trích từ cây quyết định</summary>
-            <p>Các ngưỡng dưới đây dùng chỉ số đã chuẩn hóa theo train và được làm tròn. Class là lớp phổ biến tại lá. Khi hai lớp bằng nhau, bản trích ghi 0 còn bộ phân loại trả nhãn 1 ở điểm 0,5.</p>
-            <pre id="treeRules"></pre>
+
+        <details id="treeSection" class="tree-details" hidden>
+            <summary>Quy tắc trích từ cây quyết định (ID3)</summary>
+            <div class="tree-content">
+                <div class="tree-toolbar">
+                    <p>Các ngưỡng dùng chỉ số đã chuẩn hóa theo train và được làm tròn. Class là lớp phổ biến tại lá; khi hai lớp hòa, bản trích ghi 0 còn bộ phân loại trả nhãn 1 ở điểm 0,5.</p>
+                    <button type="button" class="ghost-btn" id="treeRawToggle" aria-pressed="false">Xem dạng văn bản thô</button>
+                </div>
+                <div id="treeCards" class="tree-cards"></div>
+                <pre id="treeRules" role="region" aria-label="Quy tắc cây quyết định dạng thô" tabindex="0" hidden></pre>
+            </div>
         </details>
     </section>
-    <section id="history" class="panel wide" aria-labelledby="historyTitle">
-        <header><span class="kicker">SQLite · 10 lượt gần nhất</span><h2 id="historyTitle">Lịch sử suy luận</h2>
-            <p>Mỗi lượt lưu điểm riêng của mô hình ML trước khi gộp luật.</p></header>
-        <div class="table-scroll" tabindex="0" aria-label="Bảng lịch sử">
-            <table><thead><tr><th scope="col">Mã lượt</th><th scope="col">Nhóm bệnh</th><th scope="col">Điểm ML</th><th scope="col">Thời gian (UTC)</th></tr></thead>
-                <tbody id="historyBody"></tbody></table>
+
+    <section id="history" class="panel wide view-section" data-view="history" aria-labelledby="historyTitle">
+        <header class="section-head">
+            <div>
+                <span class="kicker">SQLite · 10 lượt gần nhất</span>
+                <h2 id="historyTitle" tabindex="-1">Lịch sử suy luận</h2>
+                <p>Mỗi lượt lưu chỉ số đầu vào và điểm riêng của mô hình ML trước khi gộp luật. Bấm <strong>Nạp lại</strong> để tái lập ca trên biểu mẫu.</p>
+            </div>
+            <button type="button" class="ghost-btn" id="refreshHistoryBtn">Làm mới</button>
+        </header>
+        <div class="table-scroll" role="region" aria-labelledby="historyTitle" tabindex="0">
+            <table class="history-table">
+                <caption class="visually-hidden">10 lượt suy luận gần nhất được lưu trong SQLite</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Mã lượt</th>
+                        <th scope="col">Nhóm bệnh</th>
+                        <th scope="col">Chỉ số đã gửi</th>
+                        <th scope="col">Điểm ML</th>
+                        <th scope="col">Thời gian</th>
+                        <th scope="col">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody"></tbody>
+            </table>
         </div>
     </section>
 </main>
