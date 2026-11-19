@@ -31,12 +31,18 @@ const DATASET_FACT_SPECS = {
 };
 
 const DEMO_PRESETS = [
-    {id: "c1", num: "01", title: "Hợp lệ", disease: "heart", inputs: {age: 60, bp: 135, chol: 230}},
-    {id: "c2", num: "02", title: "Thiếu chol", disease: "heart", inputs: {age: 60, bp: 135, chol: null}},
-    {id: "c3", num: "03", title: "Biên fuzzy 50%", disease: "heart", inputs: {age: 60, bp: 135, chol: 200}},
-    {id: "c4", num: "04", title: "2 luật đích", disease: "diabetes", inputs: {glucose: 175, bmi: 33, age: 45}},
-    {id: "c5", num: "05", title: "ML ≠ Luật", disease: "diabetes", inputs: {glucose: 90, bmi: 26, age: 45}},
-    {id: "c6", num: "06", title: "Ngoài miền", disease: "heart", inputs: {age: 60, bp: 135, chol: 900}},
+    {id: "c1", num: "01", title: "Hợp lệ", disease: "heart", inputs: {age: 60, bp: 135, chol: 230},
+     note: "Ca 1 · Tim mạch hợp lệ: CLEV_TARGET_01 được gộp với ML, còn CLEV_SECONDARY_01 hiển thị là luật phụ."},
+    {id: "c2", num: "02", title: "Thiếu chol", disease: "heart", inputs: {age: 60, bp: 135, chol: null},
+     note: "Ca 2 · Thiếu cholesterol (null): ML dùng trung vị train, hệ luật giữ dữ kiện ở trạng thái chưa biết."},
+    {id: "c3", num: "03", title: "Biên fuzzy 50%", disease: "heart", inputs: {age: 60, bp: 135, chol: 200},
+     note: "Ca 3 · Đúng trung điểm 200 mg/dL (μ = 50%): theo điều kiện μ > 50%, fact là Sai và không khớp luật đích."},
+    {id: "c4", num: "04", title: "2 luật đích", disease: "diabetes", inputs: {glucose: 175, bmi: 33, age: 45},
+     note: "Ca 4 · Tiểu đường khớp cùng lúc 2 luật BMI đích: gộp C_rule trước rồi gộp ML đúng một lần."},
+    {id: "c5", num: "05", title: "ML ≠ Luật", disease: "diabetes", inputs: {glucose: 90, bmi: 26, age: 45},
+     note: "Ca 5 · ML (14,3% · âm) bất đồng với Luật (50,0% · dương), kéo điểm kết hợp vượt ngưỡng 50%."},
+    {id: "c6", num: "06", title: "Ngoài miền", disease: "heart", inputs: {age: 60, bp: 135, chol: 900},
+     note: "Ca 6 · Đầu vào ngoài miền (chol = 900): backend trả HTTP 400, ẩn kết quả và không ghi vào SQLite."},
 ];
 
 const DISEASE_ICON_PATHS = {
@@ -62,7 +68,14 @@ let selection = 0;
 let historyRequest = 0;
 let currentModelData = null;
 let currentChartMetric = "f1";
+let currentTreeFilter = "all";
 let activePresetId = null;
+let liveAutoRun = false;
+let liveDebounceTimer = null;
+let scoreCountRaf = null;
+let toastTimer = null;
+let lastCopyMessage = "";
+const copyTimers = new WeakMap();
 const lastScoresByDisease = {};
 let supportsDisplayTransition;
 
@@ -87,6 +100,10 @@ function makeIconSvg(paths) {
     if (!svg) return make("span");
     for (const d of paths) svg.append(makeSvg("path", {d}));
     return svg;
+}
+
+function prefersReducedMotion() {
+    return typeof window !== "undefined" && Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
 }
 
 async function fetchJson(url, options) {
@@ -143,7 +160,7 @@ function initThemeToggle() {
     }
 }
 
-/* ===== Glossary Popover with Top-Layer Exit Fallback ===== */
+/* ===== Discrete Display Probe, Toast & Popover Exit Helpers ===== */
 function canTransitionDisplay() {
     if (supportsDisplayTransition !== undefined) return supportsDisplayTransition;
     if (typeof window === "undefined" || !window.CSS?.supports?.("transition-behavior", "allow-discrete") || !document.body) {
@@ -183,6 +200,35 @@ async function closeTopLayer(element, nativePopover) {
     }
 }
 
+async function hideToastElement(el) {
+    if (canTransitionDisplay()) {
+        el.hidden = true;
+        return;
+    }
+    el.setAttribute("data-closing", "");
+    const animations = el.getAnimations?.() || [];
+    if (animations.length > 0) {
+        await Promise.race([
+            Promise.allSettled(animations.map(a => a.finished)),
+            new Promise(resolve => setTimeout(resolve, 600)),
+        ]);
+    }
+    if (el.hasAttribute("data-closing")) {
+        el.removeAttribute("data-closing");
+        el.hidden = true;
+    }
+}
+
+function showToast(message) {
+    const el = byId("toastNotice");
+    if (!el) return;
+    clearTimeout(toastTimer);
+    el.removeAttribute("data-closing");
+    el.textContent = message;
+    el.hidden = false;
+    toastTimer = setTimeout(() => hideToastElement(el), 2400);
+}
+
 function initGlossaryPopover() {
     const popover = byId("glossaryPopover");
     const trigger = byId("glossaryTrigger");
@@ -214,7 +260,69 @@ function initGlossaryPopover() {
     });
 }
 
-/* ===== View Navigation with Same-Document Transitions ===== */
+/* ===== Copy Button (follows copy-button guide with Invoker Commands + fallback) ===== */
+function legacyCopy(text) {
+    const field = Object.assign(document.createElement("textarea"), {value: text});
+    field.setAttribute("readonly", "");
+    field.style.cssText = "position:fixed;inset-block-start:0;opacity:0";
+    document.body.append(field);
+    field.select();
+    try { return document.execCommand("copy"); } catch { return false; } finally { field.remove(); }
+}
+
+function reportCopy(button, ok) {
+    const tip = button.nextElementSibling;
+    clearTimeout(copyTimers.get(button));
+    button.removeAttribute("data-copied");
+    button.removeAttribute("data-failed");
+    let message = ok ? "Đã chép" : "Chép lỗi";
+    if (message === lastCopyMessage) message += "\u00A0";
+    lastCopyMessage = message;
+    if (tip) tip.textContent = "";
+    void button.offsetWidth;
+    button.setAttribute(ok ? "data-copied" : "data-failed", "");
+    if (tip) requestAnimationFrame(() => { tip.textContent = message; });
+    copyTimers.set(button, setTimeout(() => {
+        button.removeAttribute("data-copied");
+        button.removeAttribute("data-failed");
+        if (tip) tip.textContent = "";
+    }, 2000));
+}
+
+async function copyTargetText(button, target) {
+    const text = (target.innerText || target.textContent || "").trim();
+    if (!text) return;
+    try {
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(text);
+        } else if (!legacyCopy(text)) {
+            throw new Error("Copy failed");
+        }
+        reportCopy(button, true);
+    } catch {
+        if (legacyCopy(text)) reportCopy(button, true);
+        else reportCopy(button, false);
+    }
+}
+
+function initCopyCommands() {
+    document.addEventListener("command", event => {
+        if (event.command === "--copy" && event.source && event.target) {
+            copyTargetText(event.source, event.target);
+        }
+    }, true);
+
+    if (typeof window !== "undefined" && !("CommandEvent" in window)) {
+        document.addEventListener("click", event => {
+            const btn = event.target.closest?.('button[command="--copy"]');
+            if (!btn) return;
+            const target = byId(btn.getAttribute("commandfor"));
+            if (target) copyTargetText(btn, target);
+        });
+    }
+}
+
+/* ===== View Navigation with Safe Same-Document Transitions ===== */
 function applyViewLayout(view, allMode) {
     currentView = view;
     showAllViews = allMode;
@@ -238,8 +346,7 @@ function applyViewLayout(view, allMode) {
 }
 
 function runViewTransition(host, update, onDone) {
-    const reduced = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (!reduced && host && typeof host.startViewTransition === "function") {
+    if (!prefersReducedMotion() && host && typeof host.startViewTransition === "function") {
         try {
             const transition = host.startViewTransition(update);
             transition.ready?.catch?.(() => {});
@@ -296,6 +403,16 @@ function evalFactMembership(value, spec) {
         if (value <= low) return 0;
         if (value >= high) return 1;
         return (value - low) / (high - low);
+    }
+    return null;
+}
+
+function findFactSpec(dataset, factKey) {
+    const groups = DATASET_FACT_SPECS[dataset];
+    if (!groups) return null;
+    for (const [feature, specs] of Object.entries(groups)) {
+        const hit = specs.find(s => s.key === factKey);
+        if (hit) return {...hit, feature};
     }
     return null;
 }
@@ -378,7 +495,9 @@ function buildFuzzyZoneStrip(field, dataset) {
     return strip;
 }
 
-/* ===== Demo Presets Bar ===== */
+/* ===== Demo Presets Walkthrough ===== */
+const DEFAULT_PRESET_CAPTION = "6 ca tự tạo ngoài tập test · bấm chọn hoặc dùng nút Tiếp để trình diễn liền mạch";
+
 function renderPresets() {
     const list = byId("presetList");
     if (!list) return;
@@ -399,6 +518,19 @@ function updatePresetHighlight(id) {
     for (const btn of byId("presetList")?.children || []) {
         btn.setAttribute?.("aria-pressed", String(btn.dataset.presetId === id));
     }
+    const caption = byId("presetCaption");
+    if (caption) {
+        const hit = DEMO_PRESETS.find(p => p.id === id);
+        caption.textContent = hit ? hit.note : DEFAULT_PRESET_CAPTION;
+    }
+}
+
+function stepPreset(delta) {
+    const idx = DEMO_PRESETS.findIndex(p => p.id === activePresetId);
+    const nextIdx = idx === -1
+        ? (delta > 0 ? 0 : DEMO_PRESETS.length - 1)
+        : (idx + delta + DEMO_PRESETS.length) % DEMO_PRESETS.length;
+    applyPreset(DEMO_PRESETS[nextIdx]);
 }
 
 function applyPreset(preset) {
@@ -449,9 +581,31 @@ function fillFormInputs(values) {
     }
 }
 
-/* ===== Disease Selection & Form Rendering ===== */
+/* ===== Disease Selection, Live What-If & Form Rendering ===== */
+function replayWaitingPulse() {
+    if (prefersReducedMotion()) return;
+    const pulses = byId("emptyState")?.querySelectorAll?.(".flow-pulse") || [];
+    for (const p of pulses) {
+        p.style.animation = "none";
+        void p.getBoundingClientRect?.();
+        p.style.animation = "";
+    }
+}
+
+function scheduleLiveDiagnosis() {
+    if (!liveAutoRun) return;
+    clearTimeout(liveDebounceTimer);
+    liveDebounceTimer = setTimeout(() => {
+        const form = byId("diagnosisForm");
+        if (form && !form.inert) {
+            runDiagnosis({preventDefault() {}, currentTarget: form}, {preserveFocus: true});
+        }
+    }, 220);
+}
+
 function selectDisease(key, {transition = true} = {}) {
     const perform = () => {
+        clearTimeout(liveDebounceTimer);
         currentDisease = key;
         selection++;
         activePresetId = null;
@@ -467,6 +621,7 @@ function selectDisease(key, {transition = true} = {}) {
         byId("emptyState").querySelector(".flow")?.classList.toggle("ml-only", !disease.has_target_rules);
         renderForm(disease);
         clearResult();
+        replayWaitingPulse();
         loadModelStats(key, selection);
     };
 
@@ -480,11 +635,28 @@ function selectDisease(key, {transition = true} = {}) {
 async function start() {
     initThemeToggle();
     initGlossaryPopover();
+    initCopyCommands();
     initNavigation();
     initModelTableSorting();
     initChartMetricSwitcher();
-    initTreeRawToggle();
-    byId("refreshHistoryBtn")?.addEventListener("click", loadHistory);
+    initTreeControls();
+
+    byId("refreshHistoryBtn")?.addEventListener("click", () => {
+        loadHistory();
+        showToast("Đã làm mới lịch sử từ SQLite.");
+    });
+    byId("presetPrevBtn")?.addEventListener("click", () => stepPreset(-1));
+    byId("presetNextBtn")?.addEventListener("click", () => stepPreset(1));
+
+    byId("liveAutoToggle")?.addEventListener("click", event => {
+        liveAutoRun = !liveAutoRun;
+        event.currentTarget.setAttribute("aria-pressed", String(liveAutoRun));
+        showToast(liveAutoRun
+            ? "Đã bật tự chạy suy luận khi kéo thanh trượt."
+            : "Đã tắt tự chạy — bấm Chạy suy luận để cập nhật.");
+        if (liveAutoRun) scheduleLiveDiagnosis();
+    });
+
     byId("resetDefaultsBtn")?.addEventListener("click", () => {
         const disease = diseases[currentDisease];
         if (!disease) return;
@@ -492,6 +664,18 @@ async function start() {
         fillFormInputs(defaults);
         updatePresetHighlight(null);
         markResultStale();
+        showToast("Đã đặt lại chỉ số mặc định của " + disease.name + ".");
+        if (liveAutoRun) scheduleLiveDiagnosis();
+    });
+
+    document.addEventListener("keydown", event => {
+        if ((event.ctrlKey || event.metaKey) && event.key === "Enter" && currentView === "workspace") {
+            const form = byId("diagnosisForm");
+            if (form && !form.inert) {
+                event.preventDefault();
+                form.requestSubmit?.();
+            }
+        }
     });
 
     try {
@@ -609,6 +793,7 @@ function renderForm(disease) {
             clearErrors(form);
             updatePresetHighlight(null);
             markResultStale();
+            scheduleLiveDiagnosis();
         });
 
         input.addEventListener("input", () => {
@@ -657,6 +842,7 @@ function renderForm(disease) {
                 updateFieldPreview(preview, field, Number(restored), false, disease.dataset);
                 input.focus();
             }
+            scheduleLiveDiagnosis();
         });
 
         group.append(top, entry, sliderWrap, preview);
@@ -670,7 +856,7 @@ function renderForm(disease) {
     const button = make("button", "Chạy suy luận", "submit");
     button.type = "submit";
     form.append(errors, button);
-    form.onsubmit = runDiagnosis;
+    form.onsubmit = event => runDiagnosis(event, {preserveFocus: false});
 }
 
 function clearErrors(form) {
@@ -704,7 +890,7 @@ function showErrors(form, errors) {
     form.querySelector(".is-invalid")?.focus();
 }
 
-async function runDiagnosis(event) {
+async function runDiagnosis(event, {preserveFocus = false} = {}) {
     event.preventDefault();
     const form = event.currentTarget;
     if (form.inert) return;
@@ -724,12 +910,12 @@ async function runDiagnosis(event) {
         return;
     }
 
-    form.inert = true;
+    if (!preserveFocus) form.inert = true;
     const submit = form.querySelector("button[type=submit]");
     submit.disabled = true;
     byId("emptyState").hidden = true;
     byId("resultSection").classList?.add("is-stale");
-    byId("loading").hidden = false;
+    if (!preserveFocus) byId("loading").hidden = false;
 
     try {
         const data = await fetchJson("/api/diagnose", {
@@ -746,9 +932,11 @@ async function runDiagnosis(event) {
         byId("resultSection").classList?.remove("is-stale");
         const stale = byId("staleNotice");
         if (stale) stale.hidden = true;
-        byId("outputTitle").focus({preventScroll: true});
-        if (typeof window !== "undefined" && window.matchMedia?.("(max-width: 980px)").matches) {
-            byId("outputTitle").scrollIntoView({block: "start"});
+        if (!preserveFocus) {
+            byId("outputTitle").focus({preventScroll: true});
+            if (typeof window !== "undefined" && window.matchMedia?.("(max-width: 980px)").matches) {
+                byId("outputTitle").scrollIntoView({block: "start"});
+            }
         }
     } catch (error) {
         if (version !== selection) return;
@@ -764,16 +952,45 @@ async function runDiagnosis(event) {
     }
 }
 
-/* ===== SVG Gauge & Live Fusion Pipeline ===== */
+/* ===== Animated Figures: Score Count-Up, SVG Gauge, Compare Strip, Pipeline & Fuzzy Curve ===== */
+function animateScoreValue(el, fromScore, toScore) {
+    if (typeof cancelAnimationFrame === "function" && scoreCountRaf) {
+        cancelAnimationFrame(scoreCountRaf);
+        scoreCountRaf = null;
+    }
+    if (typeof requestAnimationFrame !== "function" || typeof performance === "undefined" || prefersReducedMotion()) {
+        el.textContent = scoreFormat.format(toScore);
+        return;
+    }
+    const startVal = typeof fromScore === "number" && Number.isFinite(fromScore) ? fromScore : 0;
+    const duration = 500;
+    const t0 = performance.now();
+    const tick = now => {
+        const p = Math.min(1, (now - t0) / duration);
+        const eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = scoreFormat.format(startVal + (toScore - startVal) * eased);
+        if (p < 1) {
+            scoreCountRaf = requestAnimationFrame(tick);
+        } else {
+            el.textContent = scoreFormat.format(toScore);
+            scoreCountRaf = null;
+        }
+    };
+    scoreCountRaf = requestAnimationFrame(tick);
+}
+
 function buildSupportGauge(combined, mlScore, ruleScore) {
-    const svg = makeSvg("svg", {viewBox: "0 0 180 112", class: "gauge-svg", "aria-hidden": "true"});
+    const svg = makeSvg("svg", {viewBox: "0 0 180 114", class: "gauge-svg", "aria-hidden": "true"});
     if (!svg) return null;
     const cx = 90, cy = 94, r = 68;
+    const clamp = v => Math.min(1, Math.max(0, v));
     const pt = frac => {
-        const ang = Math.PI * (1 - Math.min(1, Math.max(0, frac)));
+        const ang = Math.PI * (1 - clamp(frac));
         return [cx + r * Math.cos(ang), cy - r * Math.sin(ang)];
     };
     const arcLen = Math.PI * r;
+    const clampedCombined = clamp(combined);
+
     const bgPath = makeSvg("path", {
         d: `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`,
         fill: "none", stroke: "var(--surface-3)", "stroke-width": 13, "stroke-linecap": "round",
@@ -781,8 +998,11 @@ function buildSupportGauge(combined, mlScore, ruleScore) {
     const fgPath = makeSvg("path", {
         d: `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`,
         fill: "none", stroke: "var(--tone-accent)", "stroke-width": 13, "stroke-linecap": "round",
-        "stroke-dasharray": `${(arcLen * Math.min(1, Math.max(0, combined))).toFixed(1)} ${arcLen.toFixed(1)}`,
+        class: "gauge-arc-fg",
     });
+    fgPath.style?.setProperty?.("--arc-total", arcLen.toFixed(1));
+    fgPath.style?.setProperty?.("--arc-offset", (arcLen * (1 - clampedCombined)).toFixed(1));
+
     // 50% threshold tick at top center
     const tick = makeSvg("line", {
         x1: cx, y1: cy - r - 11, x2: cx, y2: cy - r + 11,
@@ -792,35 +1012,71 @@ function buildSupportGauge(combined, mlScore, ruleScore) {
         x: cx, y: 11, "text-anchor": "middle", fill: "var(--muted)", "font-size": 10, "font-family": "var(--font-mono)",
     });
     tickLabel.textContent = "50%";
-    const leftLabel = makeSvg("text", {x: 16, y: 109, fill: "var(--muted)", "font-size": 9.5, "font-family": "var(--font-mono)"});
+    const leftLabel = makeSvg("text", {x: 16, y: 110, fill: "var(--muted)", "font-size": 9.5, "font-family": "var(--font-mono)"});
     leftLabel.textContent = "0%";
-    const rightLabel = makeSvg("text", {x: 164, y: 109, "text-anchor": "end", fill: "var(--muted)", "font-size": 9.5, "font-family": "var(--font-mono)"});
+    const rightLabel = makeSvg("text", {x: 164, y: 110, "text-anchor": "end", fill: "var(--muted)", "font-size": 9.5, "font-family": "var(--font-mono)"});
     rightLabel.textContent = "100%";
 
-    svg.append(bgPath, fgPath, tick, tickLabel, leftLabel, rightLabel);
+    // Animated pointer needle sweeping to combined_score
+    const needleGroup = makeSvg("g", {class: "gauge-needle"});
+    const deg = -90 + clampedCombined * 180;
+    needleGroup.style?.setProperty?.("--needle-deg", deg.toFixed(1) + "deg");
+    needleGroup.append(
+        makeSvg("line", {x1: cx, y1: cy, x2: cx, y2: cy - r + 14, stroke: "var(--tone-accent)", "stroke-width": 2.4, "stroke-linecap": "round"}),
+        makeSvg("circle", {cx, cy, r: 4.5, fill: "var(--tone-accent)", stroke: "var(--surface)", "stroke-width": 2})
+    );
 
-    // Marker dots for ML and Rule
+    svg.append(bgPath, fgPath, tick, tickLabel, leftLabel, rightLabel, needleGroup);
+
+    // Marker pins for ML and Rule with spring pop-in
     const [mx, my] = pt(mlScore);
-    svg.append(makeSvg("circle", {cx: mx.toFixed(1), cy: my.toFixed(1), r: 4.5, fill: "var(--brand)", stroke: "var(--surface)", "stroke-width": 2}));
+    const mlPin = makeSvg("circle", {cx: mx.toFixed(1), cy: my.toFixed(1), r: 4.8, fill: "var(--brand)", stroke: "var(--surface)", "stroke-width": 2, class: "gauge-pin"});
+    mlPin.style?.setProperty?.("--delay", "240ms");
+    const mlTitle = makeSvg("title");
+    mlTitle.textContent = "ML: " + scoreFormat.format(mlScore);
+    mlPin.append(mlTitle);
+    svg.append(mlPin);
+
     if (ruleScore !== null) {
         const [rx, ry] = pt(ruleScore);
-        svg.append(makeSvg("circle", {cx: rx.toFixed(1), cy: ry.toFixed(1), r: 4.5, fill: "var(--conflict-accent)", stroke: "var(--surface)", "stroke-width": 2}));
+        const ripple = makeSvg("circle", {cx: rx.toFixed(1), cy: ry.toFixed(1), r: 5, fill: "none", stroke: "var(--conflict-accent)", "stroke-width": 1.6, class: "gauge-pin-pulse"});
+        const rulePin = makeSvg("circle", {cx: rx.toFixed(1), cy: ry.toFixed(1), r: 4.8, fill: "var(--conflict-accent)", stroke: "var(--surface)", "stroke-width": 2, class: "gauge-pin"});
+        rulePin.style?.setProperty?.("--delay", "360ms");
+        const ruleTitle = makeSvg("title");
+        ruleTitle.textContent = "Hệ luật: " + scoreFormat.format(ruleScore);
+        rulePin.append(ruleTitle);
+        svg.append(ripple, rulePin);
     }
-    return svg;
+
+    const wrap = make("div", undefined, "gauge-wrap");
+    const legend = make("div", undefined, "gauge-legend");
+    const mlKey = make("span", undefined, "gauge-key");
+    mlKey.append(make("i"), "ML");
+    legend.append(mlKey);
+    if (ruleScore !== null) {
+        const ruleKey = make("span", undefined, "gauge-key is-rule");
+        ruleKey.append(make("i"), "Luật");
+        legend.append(ruleKey);
+    }
+    wrap.append(svg, legend);
+    return wrap;
 }
 
 function buildCompareStrip(mlScore, ruleScore, combinedScore) {
     const strip = make("div", undefined, "compare-strip");
     const items = [
-        {label: "ML", val: mlScore, cls: ""},
-        {label: "Hệ luật", val: ruleScore, cls: " is-rule"},
-        {label: "Kết hợp", val: combinedScore, cls: " is-combined"},
+        {label: "ML", val: mlScore, cls: "", delay: "40ms"},
+        {label: "Hệ luật", val: ruleScore, cls: " is-rule", delay: "130ms"},
+        {label: "Kết hợp", val: combinedScore, cls: " is-combined", delay: "220ms"},
     ];
     for (const item of items) {
         const row = make("div", undefined, "compare-row");
         const track = make("div", undefined, "compare-track");
         const fill = make("div", undefined, "compare-fill" + item.cls + (item.val === null ? " is-empty" : ""));
-        if (item.val !== null && fill.style) fill.style.width = (Math.min(1, Math.max(0, item.val)) * 100).toFixed(1) + "%";
+        if (item.val !== null && fill.style) {
+            fill.style.width = (Math.min(1, Math.max(0, item.val)) * 100).toFixed(1) + "%";
+            fill.style.setProperty?.("--delay", item.delay);
+        }
         track.append(fill);
         row.append(
             make("span", item.label),
@@ -835,20 +1091,119 @@ function buildCompareStrip(mlScore, ruleScore, combinedScore) {
     return strip;
 }
 
+function makePipeConnector(symbol, delayMs) {
+    const svg = makeSvg("svg", {viewBox: "0 0 36 18", class: "pipe-connector", "aria-hidden": "true"});
+    if (!svg) return make("span", symbol, "pipe-op");
+    if (symbol === "+") {
+        svg.append(
+            makeSvg("line", {x1: 2, y1: 9, x2: 34, y2: 9, class: "pipe-conn-base"}),
+            makeSvg("circle", {cx: 18, cy: 9, r: 7.5, fill: "var(--surface)", stroke: "var(--line-strong)", "stroke-width": 1.4}),
+            makeSvg("path", {d: "M15 9h6M18 6v6", stroke: "var(--brand)", "stroke-width": 1.8, "stroke-linecap": "round"})
+        );
+    } else {
+        const pulse = makeSvg("path", {d: "M 2 9 L 30 9", class: "pipe-conn-pulse"});
+        pulse.style?.setProperty?.("--delay", delayMs + "ms");
+        svg.append(
+            makeSvg("path", {d: "M 2 9 L 30 9 M 25 4 L 31 9 L 25 14", class: "pipe-conn-base"}),
+            pulse
+        );
+    }
+    return svg;
+}
+
+function buildFuzzyCurveFigure(fact, disease, dataset, index) {
+    if (typeof document.createElementNS !== "function") return null;
+    const spec = findFactSpec(dataset, fact.key);
+    const field = disease.fields.find(f => f.key === fact.feature);
+    if (!spec || !field) return null;
+
+    const min = field.min;
+    const max = field.max;
+    const span = max - min || 1;
+    const w = 108, h = 42, padX = 6, padY = 6;
+    const xOf = v => padX + (Math.min(max, Math.max(min, v)) - min) / span * (w - padX * 2);
+    const yOf = m => h - padY - Math.min(1, Math.max(0, m)) * (h - padY * 2);
+
+    let pts = [];
+    if (spec.kind === "ramp") {
+        const [lo, hi] = spec.bounds;
+        pts = [[xOf(min), yOf(0)], [xOf(lo), yOf(0)], [xOf(hi), yOf(1)], [xOf(max), yOf(1)]];
+    } else if (spec.kind === "at_least") {
+        const cut = spec.bounds;
+        pts = [[xOf(min), yOf(0)], [xOf(cut), yOf(0)], [xOf(cut), yOf(1)], [xOf(max), yOf(1)]];
+    } else if (spec.kind === "between") {
+        const [lo, hi] = spec.bounds;
+        pts = [[xOf(min), yOf(0)], [xOf(lo), yOf(0)], [xOf(lo), yOf(1)], [xOf(hi), yOf(1)], [xOf(hi), yOf(0)], [xOf(max), yOf(0)]];
+    }
+    if (!pts.length) return null;
+
+    const lineStr = pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+    const areaStr = `${xOf(min).toFixed(1)},${yOf(0).toFixed(1)} ${lineStr} ${xOf(max).toFixed(1)},${yOf(0).toFixed(1)}`;
+
+    const svg = makeSvg("svg", {viewBox: `0 0 ${w} ${h}`, class: "fuzzy-curve-svg", "aria-hidden": "true"});
+    const cutY = yOf(0.5).toFixed(1);
+    const curveLine = makeSvg("polyline", {points: lineStr, class: "fuzzy-curve-line"});
+    curveLine.style?.setProperty?.("--delay", (60 + index * 70) + "ms");
+
+    svg.append(
+        makeSvg("polygon", {points: areaStr, class: "fuzzy-curve-area"}),
+        makeSvg("line", {x1: padX, y1: cutY, x2: w - padX, y2: cutY, class: "fuzzy-curve-cut"}),
+        curveLine
+    );
+
+    if (fact.value !== null && fact.membership !== null) {
+        const vx = xOf(fact.value);
+        const vy = yOf(fact.membership);
+        const isBoundary = Math.abs(fact.membership - 0.5) < 1e-9;
+        const dotColor = fact.value_boolean ? "var(--brand)" : (isBoundary ? "var(--mod-accent)" : "var(--muted)");
+        const drop = makeSvg("line", {x1: vx.toFixed(1), y1: vy.toFixed(1), x2: vx.toFixed(1), y2: yOf(0).toFixed(1), class: "fuzzy-curve-drop"});
+        drop.style?.setProperty?.("--tone-dot", dotColor);
+        const dot = makeSvg("circle", {cx: vx.toFixed(1), cy: vy.toFixed(1), r: 3.8, fill: dotColor, stroke: "var(--surface)", "stroke-width": 1.6, class: "fuzzy-curve-dot"});
+        dot.style?.setProperty?.("--dot-delay", (260 + index * 70) + "ms");
+        svg.append(drop, dot);
+    }
+
+    const fig = make("figure", undefined, "fuzzy-curve-figure");
+    fig.append(svg);
+    return fig;
+}
+
 function renderLivePipeline(trace, disease, missing) {
     const container = byId("livePipeline");
     if (!container) return;
     const result = trace.result;
     const targetRules = trace.fired_rules.filter(r => r.used_in_fusion);
 
+    const head = make("div", undefined, "pipeline-head");
+    head.append(make("p", "Sơ đồ phép gộp trực tiếp", "pipeline-title"));
+
+    // Copy formula button (follows copy-button guide)
+    const copyWrap = make("span", undefined, "copy-wrap");
+    const copyBtn = make("button", undefined, "copy-btn");
+    copyBtn.type = "button";
+    copyBtn.setAttribute?.("command", "--copy");
+    copyBtn.setAttribute?.("commandfor", "fusionFormulaText");
+    copyBtn.setAttribute?.("aria-label", "Sao chép công thức phép gộp");
+    copyBtn.append(
+        make("span", "⧉", "icon-copy"),
+        make("span", "✓", "icon-check"),
+        make("span", "Chép công thức")
+    );
+    const copyTip = make("span", "", "copy-tip");
+    copyTip.setAttribute?.("role", "status");
+    copyWrap.append(copyBtn, copyTip);
+    head.append(copyWrap);
+
     const nodes = make("div", undefined, "pipeline-nodes");
     const mlNode = make("div", undefined, "pipe-node");
+    mlNode.style?.setProperty?.("--delay", "20ms");
     mlNode.append(
         make("small", "Nhánh ML" + (missing.length ? " (điền trung vị)" : "")),
         make("strong", "p = " + mathFormat.format(trace.ml.score))
     );
 
     const ruleNode = make("div", undefined, "pipe-node" + (result.rule_score === null ? " is-inactive" : ""));
+    ruleNode.style?.setProperty?.("--delay", "110ms");
     ruleNode.append(
         make("small", result.rule_score === null
             ? (disease.has_target_rules ? "Luật đích (0 khớp)" : "Chưa có luật đích")
@@ -857,14 +1212,16 @@ function renderLivePipeline(trace, disease, missing) {
     );
 
     const finalNode = make("div", undefined, "pipe-node is-final");
+    finalNode.style?.setProperty?.("--delay", "200ms");
     finalNode.append(
         make("small", "Gộp mới → Nhãn " + result.predicted_label),
         make("strong", "C_new = " + mathFormat.format(result.combined_score))
     );
 
-    nodes.append(mlNode, make("span", "+", "pipe-op"), ruleNode, make("span", "→", "pipe-op"), finalNode);
+    nodes.append(mlNode, makePipeConnector("+", 90), ruleNode, makePipeConnector("→", 180), finalNode);
 
     const formula = make("div", undefined, "formula-box");
+    formula.id = "fusionFormulaText";
     if (result.rule_score === null) {
         formula.append(
             make("span", "Không có luật đích kích hoạt — giữ nguyên điểm ML:"),
@@ -881,7 +1238,7 @@ function renderLivePipeline(trace, disease, missing) {
         );
     }
 
-    container.replaceChildren(make("p", "Sơ đồ phép gộp trực tiếp", "pipeline-title"), nodes, formula);
+    container.replaceChildren(head, nodes, formula);
     container.hidden = false;
 }
 
@@ -897,22 +1254,25 @@ function renderTrace(trace, disease, previousScore) {
     rules.replaceChildren();
 
     const missing = [];
-    for (const field of disease.fields) {
+    disease.fields.forEach((field, idx) => {
         const matched = trace.facts.find(fact => fact.feature === field.key);
         const value = matched?.value;
         const unit = matched?.unit;
         if (value == null) missing.push(field.key);
         const item = make("li", undefined, "trace-input-chip" + (value == null ? " is-missing" : ""));
+        item.style?.setProperty?.("--delay", (idx * 45) + "ms");
         const showUnit = unit && unit !== "years" && !field.label.includes(unit);
         item.append(
             make("span", field.label + " · "),
             make("strong", value == null ? "Chưa biết" : (numberFormat.format(value) + (showUnit ? " " + unit : "")))
         );
         inputs.append(item);
-    }
+    });
 
-    for (const fact of trace.facts.filter(f => f.key !== null)) {
+    const derivedFacts = trace.facts.filter(f => f.key !== null);
+    derivedFacts.forEach((fact, idx) => {
         const row = make("li", undefined, "fact-card");
+        row.style?.setProperty?.("--delay", (idx * 65) + "ms");
         const head = make("div", undefined, "fact-head");
         const stateText = fact.value_boolean === null ? "Chưa biết" : (fact.value_boolean ? "Đúng" : "Sai");
         const stateCls = fact.value_boolean === null ? "is-unknown" : (fact.value_boolean ? "is-true" : "is-false");
@@ -922,25 +1282,37 @@ function renderTrace(trace, disease, previousScore) {
         );
         row.append(head);
 
-        if (fact.membership !== null) {
-            const meterRow = make("div", undefined, "fact-meter-row");
-            const meter = make("div", undefined, "fact-meter");
-            const isBoundary = Math.abs(fact.membership - 0.5) < 1e-9;
-            const fill = make("div", undefined, "fact-meter-fill" + (fact.value_boolean ? " is-true" : (isBoundary ? " is-boundary" : "")));
-            if (fill.style) fill.style.width = (Math.min(1, Math.max(0, fact.membership)) * 100).toFixed(1) + "%";
-            meter.append(fill);
-            const labelVal = "μ = " + scoreFormat.format(fact.membership) + (isBoundary ? " (đúng biên 50%)" : "");
-            meterRow.append(meter, make("span", labelVal, "fact-meter-val"));
-            row.append(meterRow);
+        const curveFig = buildFuzzyCurveFigure(fact, disease, trace.target, idx);
+        if (fact.membership !== null || curveFig) {
+            const bodyGrid = make("div", undefined, "fact-body-grid" + (curveFig ? "" : " is-bar-only"));
+            if (fact.membership !== null) {
+                const meterRow = make("div", undefined, "fact-meter-row");
+                const meter = make("div", undefined, "fact-meter");
+                const isBoundary = Math.abs(fact.membership - 0.5) < 1e-9;
+                const fill = make("div", undefined, "fact-meter-fill" + (fact.value_boolean ? " is-true" : (isBoundary ? " is-boundary" : "")));
+                if (fill.style) {
+                    fill.style.width = (Math.min(1, Math.max(0, fact.membership)) * 100).toFixed(1) + "%";
+                    fill.style.setProperty?.("--delay", (80 + idx * 70) + "ms");
+                }
+                meter.append(fill);
+                const labelVal = "μ = " + scoreFormat.format(fact.membership) + (isBoundary ? " (biên 50%)" : "");
+                meterRow.append(meter, make("span", labelVal, "fact-meter-val"));
+                bodyGrid.append(meterRow);
+            } else {
+                bodyGrid.append(make("span", "Chưa có giá trị để tính mức liên thuộc", "fact-meter-val"));
+            }
+            if (curveFig) bodyGrid.append(curveFig);
+            row.append(bodyGrid);
         }
         facts.append(row);
-    }
+    });
     if (!facts.children.length) {
         facts.append(make("li", "Bộ dữ liệu này chưa có dữ kiện dẫn xuất cho hệ luật.", "trace-empty"));
     }
 
-    for (const rule of trace.fired_rules) {
+    trace.fired_rules.forEach((rule, idx) => {
         const row = make("li", undefined, "rule-card" + (rule.used_in_fusion ? "" : " is-secondary"));
+        row.style?.setProperty?.("--delay", (idx * 75) + "ms");
         const top = make("div", undefined, "rule-top");
         const left = make("div", undefined, "rule-top-left");
         left.append(
@@ -951,14 +1323,22 @@ function renderTrace(trace, disease, previousScore) {
 
         const conds = make("div", undefined, "rule-conds");
         conds.append(make("span", "NẾU:"));
-        rule.conditions.forEach((cond, idx) => {
-            if (idx > 0) conds.append(make("span", "và"));
+        rule.conditions.forEach((cond, cIdx) => {
+            if (cIdx > 0) conds.append(make("span", "và"));
             conds.append(make("span", factLabels[cond] || cond, "cond-pill"));
         });
 
-        row.append(top, make("p", rule.conclusion, "rule-conclusion"), conds);
+        const cfBar = make("div", undefined, "rule-cf-bar");
+        const cfFill = make("div", undefined, "rule-cf-fill");
+        if (cfFill.style) {
+            cfFill.style.width = (Math.min(1, Math.max(0, rule.cf)) * 100).toFixed(1) + "%";
+            cfFill.style.setProperty?.("--delay", (120 + idx * 75) + "ms");
+        }
+        cfBar.append(cfFill);
+
+        row.append(top, make("p", rule.conclusion, "rule-conclusion"), conds, cfBar);
         rules.append(row);
-    }
+    });
     if (!rules.children.length) {
         rules.append(make("li", disease.has_target_rules ? "Chưa có luật nào khớp." : "Bộ dữ liệu này chưa có luật đích.", "trace-empty"));
     }
@@ -985,8 +1365,9 @@ function renderTrace(trace, disease, previousScore) {
 
     const hero = make("div", undefined, "score-hero");
     const heroText = make("div");
+    const scoreValueEl = make("strong", scoreFormat.format(result.combined_score), "score-value");
     heroText.append(
-        make("strong", scoreFormat.format(result.combined_score), "score-value"),
+        scoreValueEl,
         make("p", result.predicted_label ? "Vượt ngưỡng quyết định 50%" : "Dưới ngưỡng quyết định 50%", "score-sub")
     );
     hero.append(heroText);
@@ -1008,6 +1389,7 @@ function renderTrace(trace, disease, previousScore) {
     grid.append(model, rule);
 
     summary.replaceChildren(topRow, hero, compareStrip, grid);
+    animateScoreValue(scoreValueEl, previousScore, result.combined_score);
 
     // Highlight ML vs Rules disagreement when both sides sit across 0.5
     if (result.rule_score !== null) {
@@ -1040,7 +1422,16 @@ function renderTrace(trace, disease, previousScore) {
     renderLivePipeline(trace, disease, missing);
 }
 
-/* ===== CV Benchmark Chart, Sortable Table & Decision Tree Cards ===== */
+/* ===== CV Benchmark Chart with Linked Brushing, Sortable Table & Filtered Tree Cards ===== */
+function setLinkedModelHighlight(modelName) {
+    for (const row of byId("modelChart")?.querySelectorAll?.(".bar-row") || []) {
+        row.classList.toggle("is-linked", Boolean(modelName) && row.dataset.model === modelName);
+    }
+    for (const tr of byId("modelTable")?.tBodies?.[0]?.rows || []) {
+        tr.classList.toggle("is-linked", Boolean(modelName) && tr.dataset.model === modelName);
+    }
+}
+
 function renderModelChart(data, metricKey) {
     const card = byId("modelChart");
     if (!card || !data?.stats?.length) return;
@@ -1062,16 +1453,21 @@ function renderModelChart(data, metricKey) {
     legend.append(items);
 
     const chart = make("div", undefined, "bar-chart");
-    for (const model of data.stats) {
+    data.stats.forEach((model, idx) => {
         const val = model[metricKey];
         const isChosen = model.name === data.selected_model_name;
         const isBase = model === baseline;
         const row = make("div", undefined, "bar-row" + (isChosen ? " is-chosen" : "") + (isBase ? " is-baseline" : ""));
+        row.dataset.model = model.name;
+        row.addEventListener("pointerenter", () => setLinkedModelHighlight(model.name));
+        row.addEventListener("pointerleave", () => setLinkedModelHighlight(null));
+
         const nameEl = make("span", model.name, "bar-name");
         const lane = make("div", undefined, "bar-lane");
         if (val != null) {
             const fill = make("div", undefined, "bar-fill");
             fill.style.width = Math.min(100, Math.max(0, val)) + "%";
+            fill.style.setProperty("--delay", (idx * 48) + "ms");
             lane.append(fill);
             if (metricKey === "f1" && model.cv_std != null && model.cv_std > 0) {
                 const lo = Math.max(0, val - model.cv_std);
@@ -1079,6 +1475,7 @@ function renderModelChart(data, metricKey) {
                 const whisker = make("div", undefined, "bar-whisker");
                 whisker.style.left = lo + "%";
                 whisker.style.width = Math.max(0.5, hi - lo) + "%";
+                whisker.style.setProperty("--whisker-delay", (260 + idx * 48) + "ms");
                 lane.append(whisker);
             }
         }
@@ -1094,7 +1491,7 @@ function renderModelChart(data, metricKey) {
                 : numberFormat.format(val) + "%");
         row.append(nameEl, lane, make("span", valText, "bar-val"));
         chart.append(row);
-    }
+    });
 
     card.append(legend, chart);
     card.hidden = false;
@@ -1114,45 +1511,70 @@ function initChartMetricSwitcher() {
     });
 }
 
-function renderTreeCards(rawRules) {
+function renderTreeCards(rawRules, filter = currentTreeFilter) {
     const container = byId("treeCards");
     if (!container) return;
     container.replaceChildren();
     if (!rawRules) return;
     const lines = rawRules.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
-    for (const line of lines) {
-        const match = line.match(/^IF\s+(.+?)\s+THEN\s+Class=(\d+)\s+\(n=(\d+)\)$/);
+    const parsed = lines.map(line => {
+        const m = line.match(/^IF\s+(.+?)\s+THEN\s+Class=(\d+)\s+\(n=(\d+)\)$/);
+        return m ? {conds: m[1].split(/\s+AND\s+/), cls: m[2], count: m[3], raw: line} : {raw: line, cls: null};
+    });
+
+    const total = parsed.length;
+    const posCount = parsed.filter(p => p.cls === "1").length;
+    const negCount = parsed.filter(p => p.cls === "0").length;
+    for (const btn of byId("treeFilterGroup")?.querySelectorAll?.("button") || []) {
+        const f = btn.dataset.treeFilter;
+        if (f === "all") btn.textContent = "Tất cả (" + total + ")";
+        else if (f === "1") btn.textContent = "Lớp 1 · Dương (" + posCount + ")";
+        else if (f === "0") btn.textContent = "Lớp 0 · Âm (" + negCount + ")";
+    }
+
+    const visible = filter === "all" ? parsed : parsed.filter(p => p.cls === filter);
+    visible.forEach((item, idx) => {
         const card = make("div", undefined, "tree-path");
-        if (!match) {
-            card.append(make("span", line, "tree-cond"));
+        card.style?.setProperty?.("--delay", (Math.min(idx, 12) * 32) + "ms");
+        if (!item.conds) {
+            card.append(make("span", item.raw, "tree-cond"));
             container.append(card);
-            continue;
+            return;
         }
-        const [, condText, cls, count] = match;
         const condWrap = make("div", undefined, "tree-conds");
-        for (const part of condText.split(/\s+AND\s+/)) {
+        for (const part of item.conds) {
             condWrap.append(make("span", part, "tree-cond"));
         }
         const leaf = make("div", undefined, "tree-leaf");
-        const isPos = cls === "1";
+        const isPos = item.cls === "1";
         leaf.append(
             make("span", isPos ? "Lớp 1 · Dương" : "Lớp 0 · Âm", "leaf-pill " + (isPos ? "is-pos" : "is-neg")),
-            make("span", "n = " + count, "leaf-count")
+            make("span", "n = " + item.count, "leaf-count")
         );
         card.append(condWrap, leaf);
         container.append(card);
-    }
+    });
 }
 
-function initTreeRawToggle() {
+function initTreeControls() {
     const toggle = byId("treeRawToggle");
-    if (!toggle) return;
-    toggle.addEventListener("click", () => {
+    toggle?.addEventListener("click", () => {
         const showRaw = toggle.getAttribute("aria-pressed") !== "true";
         toggle.setAttribute("aria-pressed", String(showRaw));
-        toggle.textContent = showRaw ? "Xem dạng thẻ phân nhánh" : "Xem dạng văn bản thô";
+        toggle.textContent = showRaw ? "Thẻ phân nhánh" : "Văn bản thô";
         byId("treeRules").hidden = !showRaw;
         byId("treeCards").hidden = showRaw;
+    });
+
+    const filterGroup = byId("treeFilterGroup");
+    filterGroup?.addEventListener("click", event => {
+        const btn = event.target.closest?.("button[data-tree-filter]");
+        if (!btn) return;
+        currentTreeFilter = btn.dataset.treeFilter;
+        for (const item of filterGroup.querySelectorAll("button")) {
+            item.setAttribute("aria-pressed", String(item === btn));
+        }
+        if (currentModelData?.tree_rules) renderTreeCards(currentModelData.tree_rules, currentTreeFilter);
     });
 }
 
@@ -1221,7 +1643,6 @@ function initModelTableSorting() {
         if (event.command !== "--sort" || !event.source) return;
         handleTableSortTrigger(table, event.source);
     });
-    // Fallback for browsers without Invoker Commands API
     const hasInvoker = typeof HTMLButtonElement !== "undefined" && ("commandForElement" in HTMLButtonElement.prototype);
     if (!hasInvoker) {
         table.tHead?.addEventListener("click", event => {
@@ -1251,6 +1672,11 @@ async function loadModelStats(key, version) {
         const data = await fetchJson("/api/model_stats/" + key);
         if (version !== selection) return;
         currentModelData = data;
+        currentTreeFilter = "all";
+        for (const btn of byId("treeFilterGroup")?.querySelectorAll?.("button") || []) {
+            btn.setAttribute("aria-pressed", String(btn.dataset.treeFilter === "all"));
+        }
+
         const chosen = data.stats.find(m => m.name === data.selected_model_name);
         status.textContent = "Mô hình đã chọn theo F1 CV · " + data.selected_model_name +
             (chosen?.f1 != null ? (" (" + numberFormat.format(chosen.f1) + " ± " + numberFormat.format(chosen.cv_std) + "%)") : "");
@@ -1266,6 +1692,9 @@ async function loadModelStats(key, version) {
 
         for (const model of data.stats) {
             const row = make("tr");
+            row.dataset.model = model.name;
+            row.addEventListener("pointerenter", () => setLinkedModelHighlight(model.name));
+            row.addEventListener("pointerleave", () => setLinkedModelHighlight(null));
             const isChosen = model.name === data.selected_model_name;
             if (isChosen) row.className = "chosen";
 
@@ -1298,13 +1727,12 @@ async function loadModelStats(key, version) {
             body.append(row);
         }
 
-        // Apply active column sort initially without triggering a view transition while hidden
         const sortedHeader = table.tHead.querySelector("th[aria-sort]");
         if (sortedHeader) sortModelTableBy(table, sortedHeader, sortedHeader.getAttribute("aria-sort"), {animate: false});
 
         table.hidden = false;
         byId("treeRules").textContent = data.tree_rules;
-        renderTreeCards(data.tree_rules);
+        renderTreeCards(data.tree_rules, "all");
         byId("treeSection").hidden = !data.tree_rules;
     } catch (error) {
         if (version === selection) {
@@ -1406,7 +1834,12 @@ async function loadHistory() {
                     if (!showAllViews && currentView !== "workspace") switchView("workspace");
                     fillFormInputs(parsed);
                     updatePresetHighlight(null);
-                    byId("diagnosisForm")?.querySelector?.('input[type="number"]')?.focus();
+                    showToast("Đã nạp lại lượt #" + id + " (" + diseases[diseaseKey].name + ").");
+                    if (liveAutoRun) {
+                        scheduleLiveDiagnosis();
+                    } else {
+                        byId("diagnosisForm")?.querySelector?.('input[type="number"]')?.focus();
+                    }
                 });
                 actionCell.append(reloadBtn);
             } else {

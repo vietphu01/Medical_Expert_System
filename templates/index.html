@@ -112,9 +112,15 @@
 
     <section id="workspace" class="view-section" data-view="workspace" aria-label="Khu vực nhập liệu và kết quả suy luận">
         <div class="preset-bar" aria-label="Nạp nhanh kịch bản demo T13">
-            <div class="preset-meta">
-                <span class="preset-title">Kịch bản demo T13</span>
-                <small>6 ca tự tạo ngoài tập test · bấm để nạp và chạy ngay</small>
+            <div class="preset-top-row">
+                <div class="preset-meta">
+                    <span class="preset-title">Kịch bản demo T13</span>
+                    <small id="presetCaption">6 ca tự tạo ngoài tập test · bấm chọn hoặc dùng nút Kế tiếp để trình diễn liền mạch</small>
+                </div>
+                <div class="preset-nav" aria-label="Chuyển từng ca demo">
+                    <button type="button" class="ghost-btn" id="presetPrevBtn" aria-label="Ca demo trước">← Trước</button>
+                    <button type="button" class="ghost-btn" id="presetNextBtn" aria-label="Ca demo tiếp theo">Tiếp →</button>
+                </div>
             </div>
             <div id="presetList" class="preset-chips" role="group" aria-label="Danh sách 6 ca mẫu T13"></div>
         </div>
@@ -126,7 +132,13 @@
                         <span class="kicker" id="groupName">Ca mẫu</span>
                         <h2 id="formTitle">Chỉ số đầu vào</h2>
                     </div>
-                    <button type="button" class="ghost-btn" id="resetDefaultsBtn">Đặt lại mặc định</button>
+                    <div class="form-tools">
+                        <button type="button" class="live-toggle" id="liveAutoToggle" aria-pressed="false" title="Tự động chạy suy luận mỗi khi kéo thanh trượt">
+                            <span class="live-dot" aria-hidden="true"></span>
+                            <span>Tự chạy khi kéo</span>
+                        </button>
+                        <button type="button" class="ghost-btn" id="resetDefaultsBtn">Mặc định</button>
+                    </div>
                 </header>
                 <form id="diagnosisForm" novalidate><p role="status">Đang tải biểu mẫu…</p></form>
             </section>
@@ -141,16 +153,40 @@
                 </header>
 
                 <div id="emptyState" class="waiting">
-                    <div class="flow" aria-hidden="true">
-                        <div class="branches">
-                            <span class="flow-chip">Mô hình ML</span>
-                            <span class="flow-chip">Luật đích</span>
+                    <figure class="waiting-figure" aria-hidden="true">
+                        <div class="flow">
+                            <svg class="waiting-svg" viewBox="0 0 420 124" width="420" height="124" fill="none">
+                                <path class="flow-wire" d="M 88 62 C 122 62, 122 32, 152 32"/>
+                                <path class="flow-wire flow-wire-rule" d="M 88 62 C 122 62, 122 92, 152 92"/>
+                                <path class="flow-wire" d="M 264 32 C 296 32, 296 62, 326 62"/>
+                                <path class="flow-wire flow-wire-rule" d="M 264 92 C 296 92, 296 62, 326 62"/>
+
+                                <path class="flow-pulse" d="M 88 62 C 122 62, 122 32, 152 32"/>
+                                <path class="flow-pulse flow-pulse-rule" d="M 88 62 C 122 62, 122 92, 152 92"/>
+                                <path class="flow-pulse flow-pulse-out" d="M 264 32 C 296 32, 296 62, 326 62"/>
+                                <path class="flow-pulse flow-pulse-rule flow-pulse-out" d="M 264 92 C 296 92, 296 62, 326 62"/>
+
+                                <g class="flow-node">
+                                    <rect x="6" y="44" width="82" height="36" rx="10"/>
+                                    <text x="47" y="66" text-anchor="middle">Chỉ số</text>
+                                </g>
+                                <g class="flow-node">
+                                    <rect x="152" y="14" width="112" height="36" rx="10"/>
+                                    <text x="208" y="36" text-anchor="middle">Mô hình ML</text>
+                                </g>
+                                <g class="flow-node flow-node-rule">
+                                    <rect x="152" y="74" width="112" height="36" rx="10"/>
+                                    <text x="208" y="96" text-anchor="middle">Luật mờ</text>
+                                </g>
+                                <g class="flow-node flow-node-final">
+                                    <rect x="326" y="44" width="88" height="36" rx="10"/>
+                                    <text x="370" y="66" text-anchor="middle">Hỗ trợ</text>
+                                </g>
+                            </svg>
                         </div>
-                        <div class="join"></div>
-                        <span class="terminal">Điểm hỗ trợ</span>
-                    </div>
+                    </figure>
                     <h3>Sẵn sàng chạy suy luận</h3>
-                    <p>Điều chỉnh thanh trượt, thử gạt <strong>Chưa biết</strong> hoặc chọn nhanh một <strong>kịch bản demo T13</strong> ở phía trên.</p>
+                    <p>Điều chỉnh thanh trượt, bật <strong>Tự chạy khi kéo</strong> để khám phá What-If, hoặc chọn nhanh một <strong>kịch bản demo T13</strong> ở phía trên.</p>
                 </div>
 
                 <p id="loading" class="loading-bar" role="status" hidden>
@@ -229,7 +265,14 @@
             <div class="tree-content">
                 <div class="tree-toolbar">
                     <p>Các ngưỡng dùng chỉ số đã chuẩn hóa theo train và được làm tròn. Class là lớp phổ biến tại lá; khi hai lớp hòa, bản trích ghi 0 còn bộ phân loại trả nhãn 1 ở điểm 0,5.</p>
-                    <button type="button" class="ghost-btn" id="treeRawToggle" aria-pressed="false">Xem dạng văn bản thô</button>
+                    <div class="tree-controls">
+                        <div class="tree-filter-group" id="treeFilterGroup" role="group" aria-label="Lọc nhánh cây theo lớp lá">
+                            <button type="button" data-tree-filter="all" aria-pressed="true">Tất cả</button>
+                            <button type="button" data-tree-filter="1" aria-pressed="false">Lớp 1 · Dương</button>
+                            <button type="button" data-tree-filter="0" aria-pressed="false">Lớp 0 · Âm</button>
+                        </div>
+                        <button type="button" class="ghost-btn" id="treeRawToggle" aria-pressed="false">Văn bản thô</button>
+                    </div>
                 </div>
                 <div id="treeCards" class="tree-cards"></div>
                 <pre id="treeRules" role="region" aria-label="Quy tắc cây quyết định dạng thô" tabindex="0" hidden></pre>
@@ -264,5 +307,6 @@
         </div>
     </section>
 </main>
+<div id="toastNotice" class="toast-notice" role="status" aria-live="polite" hidden></div>
 </body>
 </html>
