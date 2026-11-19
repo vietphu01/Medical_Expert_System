@@ -579,16 +579,87 @@ function fillFormInputs(values) {
             if (preview) updateFieldPreview(preview, field, Number(val), false, disease.dataset);
         }
     }
+    updateWaitingPlaceholder();
 }
 
-/* ===== Disease Selection, Live What-If & Form Rendering ===== */
+/* ===== Disease Selection, Live Placeholder, Live What-If & Form Rendering ===== */
+const TARGET_RULE_CONDS = {
+    cleveland: [["age_at_least_55", "chol_elevated"]],
+    pima: [["age_35_to_70", "bmi_elevated"], ["age_35_to_70", "bmi_higher"]],
+    ilpd: [],
+    ckd: [],
+};
+
+const SHORT_MODEL_NAMES = {
+    "Gaussian Naive Bayes": "Gaussian NB",
+    "K-Nearest Neighbors": "KNN (k=7)",
+    "Logistic Regression": "Logistic Reg.",
+    "Decision Tree (ID3)": "Decision Tree",
+    "Ensemble Voting": "Ensemble",
+};
+
+function updateWaitingPlaceholder() {
+    const disease = diseases[currentDisease];
+    const form = byId("diagnosisForm");
+    if (!disease || !form) return;
+
+    const values = {};
+    let filledCount = 0;
+    const chipsBox = byId("waitInputChips");
+    if (chipsBox) chipsBox.replaceChildren();
+
+    for (const field of disease.fields) {
+        const el = form.elements?.namedItem?.("inputs." + field.key);
+        const raw = el?.value ?? "";
+        const isMissing = raw === "";
+        const num = isMissing ? null : Number(raw);
+        values[field.key] = Number.isFinite(num) ? num : null;
+        if (!isMissing) filledCount++;
+
+        if (chipsBox) {
+            const label = field.key + ": " + (isMissing ? "Chưa biết" : (Number.isFinite(num) ? numberFormat.format(num) : raw));
+            chipsBox.append(make("span", label, "bp-chip" + (isMissing ? " is-missing" : "")));
+        }
+    }
+
+    const nodeInputs = byId("waitNodeInputs");
+    if (nodeInputs) nodeInputs.textContent = filledCount + "/" + disease.fields.length + " chỉ số";
+
+    const nodeRules = byId("waitNodeRules");
+    const rulePreview = byId("waitRulePreview");
+    const ruleDefs = TARGET_RULE_CONDS[disease.dataset] || [];
+    if (!disease.has_target_rules) {
+        if (nodeRules) nodeRules.textContent = "Chưa có luật";
+        if (rulePreview) {
+            rulePreview.textContent = "Chỉ chạy ML · chưa có luật đích";
+            rulePreview.classList?.remove("is-match");
+        }
+    } else {
+        const factTruth = {};
+        for (const [feat, specs] of Object.entries(DATASET_FACT_SPECS[disease.dataset] || {})) {
+            for (const spec of specs) {
+                const m = evalFactMembership(values[feat], spec);
+                factTruth[spec.key] = m !== null && m > 0.5;
+            }
+        }
+        const expectedMatches = ruleDefs.filter(conds => conds.every(c => factTruth[c] === true)).length;
+        if (nodeRules) nodeRules.textContent = expectedMatches ? (expectedMatches + " luật dự khớp") : "0 luật dự khớp";
+        if (rulePreview) {
+            rulePreview.textContent = expectedMatches
+                ? ("Dự kiến kích hoạt " + expectedMatches + " luật đích")
+                : "Chưa đạt tiền đề luật đích";
+            rulePreview.classList?.toggle("is-match", expectedMatches > 0);
+        }
+    }
+}
+
 function replayWaitingPulse() {
     if (prefersReducedMotion()) return;
-    const pulses = byId("emptyState")?.querySelectorAll?.(".flow-pulse") || [];
-    for (const p of pulses) {
-        p.style.animation = "none";
-        void p.getBoundingClientRect?.();
-        p.style.animation = "";
+    const animated = byId("emptyState")?.querySelectorAll?.(".flow-pulse, .bp-arc-sweep, .bp-shimmer") || [];
+    for (const el of animated) {
+        el.style.animation = "none";
+        void el.getBoundingClientRect?.();
+        el.style.animation = "";
     }
 }
 
@@ -619,7 +690,10 @@ function selectDisease(key, {transition = true} = {}) {
         byId("outputDataset").textContent = dataset + (disease.has_target_rules ? " · ML + Hệ luật" : " · Chỉ ML");
         byId("modelDataset").textContent = dataset + " · Kiểm chứng chéo 5-fold";
         byId("emptyState").querySelector(".flow")?.classList.toggle("ml-only", !disease.has_target_rules);
+        const nodeModel = byId("waitNodeModel");
+        if (nodeModel) nodeModel.textContent = "Đang tải…";
         renderForm(disease);
+        updateWaitingPlaceholder();
         clearResult();
         replayWaitingPulse();
         loadModelStats(key, selection);
@@ -647,6 +721,14 @@ async function start() {
     });
     byId("presetPrevBtn")?.addEventListener("click", () => stepPreset(-1));
     byId("presetNextBtn")?.addEventListener("click", () => stepPreset(1));
+
+    byId("waitRunBtn")?.addEventListener("click", () => {
+        byId("diagnosisForm")?.requestSubmit?.();
+    });
+    byId("waitDemoBtn")?.addEventListener("click", () => {
+        const c5 = DEMO_PRESETS.find(p => p.id === "c5");
+        if (c5) applyPreset(c5);
+    });
 
     byId("liveAutoToggle")?.addEventListener("click", event => {
         liveAutoRun = !liveAutoRun;
@@ -792,6 +874,7 @@ function renderForm(disease) {
             updateFieldPreview(preview, field, val, false, disease.dataset);
             clearErrors(form);
             updatePresetHighlight(null);
+            updateWaitingPlaceholder();
             markResultStale();
             scheduleLiveDiagnosis();
         });
@@ -817,6 +900,7 @@ function renderForm(disease) {
                 }
                 updateFieldPreview(preview, field, num, false, disease.dataset);
             }
+            updateWaitingPlaceholder();
         });
 
         missingBtn.addEventListener("click", () => {
@@ -842,6 +926,7 @@ function renderForm(disease) {
                 updateFieldPreview(preview, field, Number(restored), false, disease.dataset);
                 input.focus();
             }
+            updateWaitingPlaceholder();
             scheduleLiveDiagnosis();
         });
 
@@ -1683,6 +1768,10 @@ async function loadModelStats(key, version) {
         if (brief) {
             brief.textContent = data.selected_model_name + (chosen?.f1 != null ? (" · F1 " + numberFormat.format(chosen.f1) + "%") : "");
         }
+        const nodeModel = byId("waitNodeModel");
+        if (nodeModel) {
+            nodeModel.textContent = SHORT_MODEL_NAMES[data.selected_model_name] || data.selected_model_name;
+        }
         if (badge) {
             badge.textContent = String(data.stats.length);
             badge.hidden = false;
@@ -1739,6 +1828,8 @@ async function loadModelStats(key, version) {
             currentModelData = null;
             status.textContent = error.fields?.model || "Chưa tải được thông tin mô hình.";
             if (brief) brief.textContent = "Chưa có artifact mô hình";
+            const nodeModel = byId("waitNodeModel");
+            if (nodeModel) nodeModel.textContent = "Chưa có";
         }
     }
 }
