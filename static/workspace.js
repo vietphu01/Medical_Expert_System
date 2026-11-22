@@ -1493,7 +1493,7 @@ function renderTrace(trace, disease, {preserveWhy = false} = {}) {
                 "), gộp với ML một lần cho ra " + scoreFormat.format(combined) + ".";
         } else {
             whySentence = "Mô hình ML cho " + scoreFormat.format(mlScore) + " và có 1 luật đích khớp (" +
-                scoreFormat.format(ruleScore) + "), nâng điểm kết hợp lên " + scoreFormat.format(combined) + ".";
+                scoreFormat.format(ruleScore) + "); điểm kết hợp là " + scoreFormat.format(combined) + ".";
         }
         if (secondaryRules.length) {
             whySentence += " Ngoài ra có " + secondaryRules.length + " luật phụ hiển thị trong Chi tiết kỹ thuật, không cộng vào điểm.";

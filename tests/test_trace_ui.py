@@ -61,6 +61,10 @@ assert.doesNotMatch(contents(nodes.traceResult), /Không có luật đích/);
 trace.result.combined_score = 0.5;
 context.renderTrace(trace, disease);
 assert.match(contents(nodes.traceResult), /đạt ngưỡng 50%/);
+trace.ml.score = 1;
+trace.result.combined_score = 1;
+context.renderTrace(trace, disease);
+assert.doesNotMatch(contents(nodes.traceResult), /nâng điểm kết hợp/);
 """
         subprocess.run(['node', '-e', harness, str(ROOT / 'static/workspace.js')],
                        check=True, capture_output=True, text=True)

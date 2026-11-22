@@ -78,6 +78,6 @@ Commit `4400e40` bổ sung [37 câu hỏi vấn đáp và kế hoạch luyện t
 
 ## Tinh gọn màn hình suy luận ngày 22/11/2026
 
-Commit `3dd065b` hoàn thiện thay đổi giao diện đang làm dở: danh sách ca và chú thích mở theo yêu cầu; kết quả chính hiện điểm ML và điểm kết hợp; lời giải thích ngắn và chi tiết kỹ thuật mở riêng. Lỗi nhập hiện dưới ô, kết quả cũ có cảnh báo và phản hồi đến muộn không ghi đè đầu vào mới. [Kịch bản demo](T13_DEMO.md) · [Kiểm thử giao diện](../tests/test_trace_ui.py)
+Commit `3dd065b` hoàn thiện thay đổi giao diện đang làm dở: danh sách ca và chú thích mở theo yêu cầu; kết quả chính hiện điểm ML và điểm kết hợp; lời giải thích ngắn và chi tiết kỹ thuật mở riêng. Lỗi nhập hiện dưới ô, kết quả cũ có cảnh báo và phản hồi đến muộn không ghi đè đầu vào mới. Lời giải thích cũng không khẳng định điểm tăng nếu ML đã là 100%. [Kịch bản demo](T13_DEMO.md) · [Kiểm thử giao diện](../tests/test_trace_ui.py)
 
 Đã đọc diff, `git diff --cached --check` và `node --check static/workspace.js` pass; `PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m unittest discover -s tests -q` pass 48/48. Trình duyệt chạy năm ca hợp lệ, ca ngoài miền và bốn nhóm trên Flask với artifact T06 và SQLite tạm; ca 5 hiện 14,3% → 57,1%, ca ngoài miền không ghi lịch sử. Đã kiểm tra chú thích, trace, cảnh báo kết quả cũ và chiều rộng 390 px, cùng liên kết trong ba tài liệu demo. Không chạy lại đánh giá holdout. Bước tiếp theo là luyện demo theo kịch bản mới.
