@@ -13,7 +13,7 @@ MEDICAL_HISTORY_DB="$demo_db_dir/history.sqlite" \
   .venv/bin/python -B -m flask --app app run --host 127.0.0.1 --port 5000
 ```
 
-Mở [ứng dụng cục bộ](http://127.0.0.1:5000), chọn nhóm tương ứng, điền các giá trị trong bảng rồi bấm **Chạy suy luận**. Ở ca 2, xóa giá trị mặc định trong ô cholesterol và để trống ô đó. Dừng Flask bằng Ctrl+C sau khi trình bày.
+Mở [ứng dụng cục bộ](http://127.0.0.1:5000), chọn **Đổi ca** rồi chọn một ca minh họa; hệ thống tự điền và chạy. Cũng có thể chọn nhóm bệnh, nhập tay các giá trị trong bảng rồi bấm **Chạy suy luận**. Ở ca 2, để trống hoặc chọn **Chưa biết** cho cholesterol. Dừng Flask bằng Ctrl+C sau khi trình bày.
 
 ## Đầu vào và kết quả
 
@@ -26,4 +26,4 @@ Mở [ứng dụng cục bộ](http://127.0.0.1:5000), chọn nhóm tương ứn
 | 5. ML bất đồng luật | Tiểu đường · Tuổi 45, glucose OGTT 90, BMI 26 kg/m² | ML dưới ngưỡng 0,5 và luật đích đạt ngưỡng 0,5. | ML 14,29% cho nhãn 0. `PIMA_TARGET_01` cho điểm luật 50%, tương ứng nhãn 1. Điểm kết hợp 57,14%, nhãn 1. [Ảnh ca 5](demo/05-ml-bat-dong-luat.png) |
 | 6. Ngoài miền nhập | Tim mạch · Tuổi 60, huyết áp 135 mmHg, cholesterol 900 mg/dL | Báo lỗi tại ô cholesterol và ẩn kết quả. | Giao diện đánh dấu ô cholesterol. Phản hồi `inputs.chol` nêu miền hợp lệ 150–400 mg/dL. [Ảnh ca 6](demo/06-ngoai-mien.png) |
 
-Ảnh giao diện làm tròn điểm đến một chữ số thập phân. Ở ca 5, mở **Lịch sử** để đối chiếu điểm ML 14,3% với điểm kết hợp 57,1% ở phần kết quả.
+Giao diện hiện điểm làm tròn đến một chữ số thập phân. Với ca 5, phần kết quả hiển thị 14,3% (ML) → 57,1% (ML + luật); mở **Vì sao điểm tăng?** để xem lời giải thích và **Chi tiết kỹ thuật** để xem điểm luật, công thức, fact và mã luật. Các ảnh trên được chụp ở phiên bản giao diện trước, dùng để đối chiếu nội dung ca.

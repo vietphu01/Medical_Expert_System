@@ -10,7 +10,7 @@
 
 > “Em muốn trả lời một câu hỏi cụ thể. Nếu một mô hình học từ dữ liệu cho điểm thấp, nhưng một luật viết rõ ràng lại khớp, hệ thống sẽ kết luận thế nào? Em xin chạy một ca để thấy hai nguồn điểm, rồi dùng kết quả trên dữ liệu có nhãn để xem việc thêm luật giúp ở đâu và sai thêm ở đâu.”
 
-Trong **Suy luận**, bấm **Đổi ca** rồi chọn **Ca 5 · ML ≠ Luật**. Đây là ca tự tạo trên form Pima với tuổi 45, BMI 26 và glucose hai giờ OGTT bằng 90. Hãy chỉ vào từng dòng khi nói.
+Trong **Suy luận**, bấm **Đổi ca** rồi chọn **Ca 5 · ML bất đồng luật**. Đây là ca tự tạo trên form Pima với tuổi 45, BMI 26 và glucose hai giờ OGTT bằng 90. Hãy chỉ vào từng dòng khi nói.
 
 | Câu hỏi trước màn hình | Cách trả lời bằng chính ca đang mở |
 |---|---|
@@ -149,7 +149,7 @@ Mở [ứng dụng trên máy](http://127.0.0.1:5000). Trong giao diện hiện 
 | Thời gian | Tay làm | Miệng nói |
 |---|---|---|
 | 0:00–0:40 | Mở **Suy luận**, chỉ bốn nhóm và hai chế độ. | “Bốn nhóm có bốn mô hình riêng. Em dùng Cleveland và Pima để kiểm tra thêm xem luật tác động thế nào đến dự đoán.” |
-| 0:40–2:10 | Chọn **Đổi ca → Ca 5 · ML ≠ Luật**, mở **Vì sao điểm tăng?** và **Chi tiết kỹ thuật**. | Kể lại ca 05 bằng 1/7 → 0,50 → 0,5714. Chỉ tuổi, BMI, ID luật. Dừng ở câu “em biết vì sao quyết định đổi, còn đúng hay sai cần nhãn thật”. |
+| 0:40–2:10 | Chọn **Đổi ca → Ca 5 · ML bất đồng luật**, mở **Vì sao điểm tăng?** và **Chi tiết kỹ thuật**. | Kể lại ca 05 bằng 1/7 → 0,50 → 0,5714. Chỉ tuổi, BMI, ID luật. Dừng ở câu “em biết vì sao quyết định đổi, còn đúng hay sai cần nhãn thật”. |
 | 2:10–3:00 | Chọn **Đổi ca → Ca 2 · Thiếu cholesterol**. Chỉ ô trống, fact chưa biết và trạng thái luật. | “ML có trung vị để tính tiếp. Em giữ nguyên tình trạng thiếu ở nhánh luật, nên dòng cholesterol trống không sinh bằng chứng.” |
 | 3:00–4:00 | Mở **Mô hình CV**, chỉ mô hình được chọn và F1 ± std. | “Em giữ riêng khoảng 20%, dùng 5 fold trên phần còn lại để chọn mô hình. Bảng trên màn hình là điểm CV. Sau khi khóa phương pháp em mới đo trên phần để riêng.” |
 | 4:00–5:00 | Mở bảng FP/FN ở mục 6 hoặc trong REVIEW. Chỉ một hàng Pima. | “Thêm luật giúp tìm thêm 16 ca dương, đổi lại có thêm 12 ca báo dương sai. Số này cho biết cái giá của việc nâng điểm khi khớp luật.” |

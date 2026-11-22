@@ -31,19 +31,38 @@ const DATASET_FACT_SPECS = {
 };
 
 const DEMO_PRESETS = [
-    {id: "c1", num: "01", title: "Hợp lệ", disease: "heart", inputs: {age: 60, bp: 135, chol: 230},
-     note: "Ca 1 · Tim mạch hợp lệ: CLEV_TARGET_01 được gộp với ML, còn CLEV_SECONDARY_01 hiển thị là luật phụ."},
-    {id: "c2", num: "02", title: "Thiếu chol", disease: "heart", inputs: {age: 60, bp: 135, chol: null},
-     note: "Ca 2 · Thiếu cholesterol (null): ML dùng trung vị train, hệ luật giữ dữ kiện ở trạng thái chưa biết."},
-    {id: "c3", num: "03", title: "Biên fuzzy 50%", disease: "heart", inputs: {age: 60, bp: 135, chol: 200},
-     note: "Ca 3 · Đúng trung điểm 200 mg/dL (μ = 50%): theo điều kiện μ > 50%, fact là Sai và không khớp luật đích."},
-    {id: "c4", num: "04", title: "2 luật đích", disease: "diabetes", inputs: {glucose: 175, bmi: 33, age: 45},
-     note: "Ca 4 · Tiểu đường khớp cùng lúc 2 luật BMI đích: gộp C_rule trước rồi gộp ML đúng một lần."},
-    {id: "c5", num: "05", title: "ML ≠ Luật", disease: "diabetes", inputs: {glucose: 90, bmi: 26, age: 45},
-     note: "Ca 5 · ML (14,3% · âm) bất đồng với Luật (50,0% · dương), kéo điểm kết hợp vượt ngưỡng 50%."},
-    {id: "c6", num: "06", title: "Ngoài miền", disease: "heart", inputs: {age: 60, bp: 135, chol: 900},
-     note: "Ca 6 · Đầu vào ngoài miền (chol = 900): backend trả HTTP 400, ẩn kết quả và không ghi vào SQLite."},
+    {id: "c1", num: "01", title: "Hợp lệ", disease: "heart", diseaseLabel: "Tim mạch",
+     inputs: {age: 60, bp: 135, chol: 230},
+     summary: "Khớp 1 luật đích và 1 luật phụ"},
+    {id: "c2", num: "02", title: "Thiếu cholesterol", disease: "heart", diseaseLabel: "Tim mạch",
+     inputs: {age: 60, bp: 135, chol: null},
+     summary: "Gửi null · ML điền trung vị, luật bỏ qua"},
+    {id: "c3", num: "03", title: "Đúng biên 50%", disease: "heart", diseaseLabel: "Tim mạch",
+     inputs: {age: 60, bp: 135, chol: 200},
+     summary: "Cholesterol = 200 (μ = 50%, chưa vượt ngưỡng)"},
+    {id: "c4", num: "04", title: "2 luật đích", disease: "diabetes", diseaseLabel: "Tiểu đường",
+     inputs: {glucose: 175, bmi: 33, age: 45},
+     summary: "Khớp 2 luật BMI rồi gộp ML một lần"},
+    {id: "c5", num: "05", title: "ML bất đồng luật", disease: "diabetes", diseaseLabel: "Tiểu đường",
+     inputs: {glucose: 90, bmi: 26, age: 45},
+     summary: "ML 14,3% (âm) nhưng luật đẩy lên 57,1% (dương)"},
+    {id: "c6", num: "06", title: "Ngoài miền nhập", disease: "heart", diseaseLabel: "Tim mạch",
+     inputs: {age: 60, bp: 135, chol: 900},
+     summary: "Cholesterol = 900 · báo lỗi ngay dưới ô nhập"},
 ];
+
+const DATASET_INPUT_NOTES = {
+    pima: "Đơn vị cột glucose 2 giờ OGTT trong tập Pima nguồn chưa được xác minh.",
+    ilpd: "Đơn vị nguồn của bilirubin và albumin trong tập ILPD chưa được xác minh; nhóm này chỉ dùng ML.",
+    ckd: "Huyết áp trong tập CKD chưa rõ tâm thu hay tâm trương nên chỉ dùng cho ML, không đưa vào hệ luật.",
+};
+
+const FIELD_UNITS = {
+    cleveland: {age: "", bp: "mmHg", chol: "mg/dL"},
+    pima: {glucose: "", bmi: "kg/m²", age: ""},
+    ilpd: {bilirubin: "", albumin: "", age: ""},
+    ckd: {creatinine: "mg/dL", bp: "mmHg", age: ""},
+};
 
 const DISEASE_ICON_PATHS = {
     heart: ["M12 20.5s-7-4.6-9.1-8.5C1.4 9.1 2.9 5.5 6.4 5.5c2 0 3.4 1.1 4.1 2.3.7-1.2 2.1-2.3 4.1-2.3 3.5 0 5 3.6 3.5 6.5C19 15.9 12 20.5 12 20.5Z", "M6.5 12h2.3l1.4-2.5 2.1 4.6 1.5-2.1h3.7"],
@@ -65,6 +84,8 @@ let currentDisease = "heart";
 let currentView = "workspace";
 let showAllViews = false;
 let selection = 0;
+let inputRevision = 0;
+let diagnosisRequest = 0;
 let historyRequest = 0;
 let currentModelData = null;
 let currentChartMetric = "f1";
@@ -72,11 +93,12 @@ let currentTreeFilter = "all";
 let activePresetId = null;
 let liveAutoRun = false;
 let liveDebounceTimer = null;
-let scoreCountRaf = null;
 let toastTimer = null;
+let errorAnnounceTimer = null;
+let announcedErrorField = null;
+let whyExpanded = false;
 let lastCopyMessage = "";
 const copyTimers = new WeakMap();
-const lastScoresByDisease = {};
 let supportsDisplayTransition;
 
 function make(tag, text, className) {
@@ -229,34 +251,76 @@ function showToast(message) {
     toastTimer = setTimeout(() => hideToastElement(el), 2400);
 }
 
-function initGlossaryPopover() {
-    const popover = byId("glossaryPopover");
-    const trigger = byId("glossaryTrigger");
-    const closeBtn = byId("glossaryClose");
-    if (!popover || !trigger) return;
-    const hasNativePopover = typeof HTMLElement !== "undefined" && Object.hasOwn(HTMLElement.prototype, "popover");
+function hasNativePopoverSupport() {
+    return typeof HTMLElement !== "undefined" && Object.hasOwn(HTMLElement.prototype, "popover");
+}
 
-    if (!hasNativePopover) {
-        popover.removeAttribute("popover");
-        trigger.addEventListener("click", () => {
-            if (popover.classList.contains("is-open")) {
-                closeTopLayer(popover, false);
-            } else {
-                popover.classList.add("is-open");
-                closeBtn?.focus();
-            }
-        });
-        document.addEventListener("keydown", event => {
-            if (event.key === "Escape" && popover.classList.contains("is-open")) {
-                closeTopLayer(popover, false);
-                trigger.focus();
-            }
+function hidePopoverElement(popover) {
+    if (!popover) return;
+    if (hasNativePopoverSupport() && typeof popover.hidePopover === "function") {
+        try {
+            if (popover.matches?.(":popover-open")) popover.hidePopover();
+        } catch {}
+    } else if (popover.classList?.contains("is-open")) {
+        closeTopLayer(popover, false);
+    }
+}
+
+function initPopovers() {
+    const nativePopover = hasNativePopoverSupport();
+    const closePairs = [
+        {popoverId: "glossaryPopover", triggerId: "glossaryTrigger", closeId: "glossaryClose"},
+        {popoverId: "presetPickerPopover", triggerId: "presetPickerBtn", closeId: "presetPickerClose"},
+    ];
+
+    for (const {popoverId, triggerId, closeId} of closePairs) {
+        const popover = byId(popoverId);
+        const trigger = byId(triggerId);
+        const closeBtn = byId(closeId);
+        closeBtn?.addEventListener("click", () => {
+            closeTopLayer(popover, nativePopover);
+            trigger?.focus();
         });
     }
 
-    closeBtn?.addEventListener("click", () => {
-        closeTopLayer(popover, hasNativePopover);
-        trigger.focus();
+    if (nativePopover) return;
+
+    const allPopovers = [...(document.querySelectorAll?.("[popover]") || [])];
+    for (const el of allPopovers) el.removeAttribute("popover");
+    let lastTrigger = null;
+
+    const closeAll = () => {
+        for (const el of allPopovers) {
+            if (el.classList.contains("is-open")) closeTopLayer(el, false);
+        }
+    };
+
+    document.addEventListener("click", event => {
+        const trigger = event.target.closest?.("button[popovertarget]");
+        if (trigger) {
+            const target = byId(trigger.getAttribute("popovertarget"));
+            if (!target) return;
+            const wasOpen = target.classList.contains("is-open");
+            closeAll();
+            if (!wasOpen) {
+                target.classList.add("is-open");
+                lastTrigger = trigger;
+            }
+            return;
+        }
+        if (!event.target.closest?.(".glossary-popover, .info-popover, .preset-popover")) {
+            closeAll();
+        }
+    });
+
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+            const openOne = allPopovers.find(el => el.classList.contains("is-open"));
+            if (openOne) {
+                closeAll();
+                lastTrigger?.focus();
+            }
+        }
     });
 }
 
@@ -393,20 +457,7 @@ function initNavigation() {
     }
 }
 
-/* ===== Fuzzy Preview Helper (mirrors research_rules.py) ===== */
-function evalFactMembership(value, spec) {
-    if (value === null || !Number.isFinite(value)) return null;
-    if (spec.kind === "at_least") return value >= spec.bounds ? 1 : 0;
-    if (spec.kind === "between") return (value >= spec.bounds[0] && value <= spec.bounds[1]) ? 1 : 0;
-    if (spec.kind === "ramp") {
-        const [low, high] = spec.bounds;
-        if (value <= low) return 0;
-        if (value >= high) return 1;
-        return (value - low) / (high - low);
-    }
-    return null;
-}
-
+/* ===== Fact Curves and Form Labels ===== */
 function findFactSpec(dataset, factKey) {
     const groups = DATASET_FACT_SPECS[dataset];
     if (!groups) return null;
@@ -427,87 +478,58 @@ function syncSliderVars(slider, val) {
     slider.style?.setProperty?.("--control-value", String(clamped));
 }
 
-function updateFieldPreview(container, field, value, isMissing, dataset) {
-    container.replaceChildren();
-    if (isMissing) {
-        container.append(make("span", "Chưa biết → ML điền trung vị train · Luật bỏ qua", "preview-chip is-missing"));
-        return;
-    }
-    const specs = (DATASET_FACT_SPECS[dataset] || {})[field.key] || [];
-    if (!specs.length) return;
-    for (const spec of specs) {
-        const m = evalFactMembership(value, spec);
-        if (m === null) continue;
-        const isBoundary = Math.abs(m - 0.5) < 1e-9;
-        const isTrue = m > 0.5;
-        let text = spec.label + " · μ " + scoreFormat.format(m) + " → " + (isTrue ? "Đúng" : "Sai");
-        let cls = "preview-chip" + (isTrue ? " is-true" : "");
-        if (isBoundary) {
-            text = spec.label + " · đúng biên 50% (cần >50% → Sai)";
-            cls = "preview-chip is-boundary";
-        }
-        container.append(make("span", text, cls));
-    }
+function cleanFieldLabel(field) {
+    return field.label
+        .replace(/\s*\([^)]*chưa (?:xác minh|rõ)[^)]*\)/gi, match => {
+            const unitMatch = match.match(/^\s*\((mmHg|mg\/dL|kg\/m²)\s*;/i);
+            return unitMatch ? " (" + unitMatch[1] + ")" : "";
+        })
+        .trim();
 }
 
-function buildFuzzyZoneStrip(field, dataset) {
-    const specs = (DATASET_FACT_SPECS[dataset] || {})[field.key] || [];
-    if (!specs.length) return null;
-    const strip = make("div", undefined, "fuzzy-zones");
-    strip.setAttribute?.("aria-hidden", "true");
-    const span = field.max - field.min;
-    const pct = v => Math.min(100, Math.max(0, ((v - field.min) / span) * 100));
-
-    const ramps = [];
-    const ticks = [];
-    for (const spec of specs) {
-        if (spec.kind === "ramp") {
-            const [low, high] = spec.bounds;
-            const mid = (low + high) / 2;
-            const activeBand = make("div", undefined, "fuzzy-zone-band is-active");
-            activeBand.style.left = pct(high) + "%";
-            activeBand.style.width = Math.max(0, 100 - pct(high)) + "%";
-            strip.append(activeBand);
-            const rampBand = make("div", undefined, "fuzzy-zone-band is-ramp");
-            rampBand.style.left = pct(low) + "%";
-            rampBand.style.width = Math.max(0, pct(high) - pct(low)) + "%";
-            ramps.push(rampBand);
-            const tick = make("div", undefined, "fuzzy-cutoff-tick");
-            tick.style.left = pct(mid) + "%";
-            ticks.push(tick);
-        } else if (spec.kind === "at_least") {
-            const activeBand = make("div", undefined, "fuzzy-zone-band is-active");
-            activeBand.style.left = pct(spec.bounds) + "%";
-            activeBand.style.width = Math.max(0, 100 - pct(spec.bounds)) + "%";
-            strip.append(activeBand);
-            const tick = make("div", undefined, "fuzzy-cutoff-tick");
-            tick.style.left = pct(spec.bounds) + "%";
-            ticks.push(tick);
-        } else if (spec.kind === "between") {
-            const [low, high] = spec.bounds;
-            const activeBand = make("div", undefined, "fuzzy-zone-band is-active");
-            activeBand.style.left = pct(low) + "%";
-            activeBand.style.width = Math.max(0, pct(high) - pct(low)) + "%";
-            strip.append(activeBand);
-        }
-    }
-    strip.append(...ramps, ...ticks);
-    return strip;
+function getFieldUnit(field, dataset) {
+    return FIELD_UNITS[dataset]?.[field.key] || "";
 }
 
-/* ===== Demo Presets Walkthrough ===== */
-const DEFAULT_PRESET_CAPTION = "6 ca tự tạo ngoài tập test · bấm chọn hoặc dùng nút Tiếp để trình diễn liền mạch";
+function formatFieldGuidance(field, dataset, kind = "range") {
+    const minTxt = numberFormat.format(field.min);
+    const maxTxt = numberFormat.format(field.max);
+    if (field.key === "age") {
+        return "Nhập số nguyên từ " + minTxt + " đến " + maxTxt + ".";
+    }
+    const unit = getFieldUnit(field, dataset);
+    const suffix = unit ? " " + unit : "";
+    if (kind === "badInput") {
+        return "Nhập số hợp lệ từ " + minTxt + " đến " + maxTxt + suffix + ".";
+    }
+    return "Nhập giá trị từ " + minTxt + " đến " + maxTxt + suffix + ".";
+}
 
+function updateInputInfoPopover(disease) {
+    const datasetNote = byId("inputInfoDataset");
+    if (!datasetNote || !disease) return;
+    const text = DATASET_INPUT_NOTES[disease.dataset] || "";
+    datasetNote.textContent = text;
+    datasetNote.hidden = !text;
+}
+
+/* ===== Demo Case Picker (on-demand popover) ===== */
 function renderPresets() {
     const list = byId("presetList");
     if (!list) return;
     list.replaceChildren();
     for (const preset of DEMO_PRESETS) {
-        const btn = make("button", undefined, "preset-chip");
+        const btn = make("button", undefined, "preset-option");
         btn.type = "button";
         btn.dataset.presetId = preset.id;
         btn.setAttribute("aria-pressed", String(activePresetId === preset.id));
-        btn.append(make("span", preset.num, "chip-num"), make("span", preset.title));
+
+        const top = make("span", undefined, "preset-option-top");
+        top.append(
+            make("span", "Ca " + Number(preset.num) + " · " + preset.title, "preset-option-name"),
+            make("span", preset.diseaseLabel, "preset-option-tag")
+        );
+        btn.append(top, make("span", preset.summary, "preset-option-desc"));
         btn.addEventListener("click", () => applyPreset(preset));
         list.append(btn);
     }
@@ -518,31 +540,30 @@ function updatePresetHighlight(id) {
     for (const btn of byId("presetList")?.children || []) {
         btn.setAttribute?.("aria-pressed", String(btn.dataset.presetId === id));
     }
-    const caption = byId("presetCaption");
-    if (caption) {
+    const nameEl = byId("activePresetName");
+    if (nameEl) {
         const hit = DEMO_PRESETS.find(p => p.id === id);
-        caption.textContent = hit ? hit.note : DEFAULT_PRESET_CAPTION;
+        nameEl.textContent = hit ? ("Ca " + Number(hit.num) + " · " + hit.title) : "Chưa chọn";
+        nameEl.classList?.toggle("is-selected", Boolean(hit));
     }
-}
-
-function stepPreset(delta) {
-    const idx = DEMO_PRESETS.findIndex(p => p.id === activePresetId);
-    const nextIdx = idx === -1
-        ? (delta > 0 ? 0 : DEMO_PRESETS.length - 1)
-        : (idx + delta + DEMO_PRESETS.length) % DEMO_PRESETS.length;
-    applyPreset(DEMO_PRESETS[nextIdx]);
 }
 
 function applyPreset(preset) {
     if (!diseases[preset.disease]) return;
+    cancelPendingDiagnosis();
+    hidePopoverElement(byId("presetPickerPopover"));
     if (preset.disease !== currentDisease) {
         selectDisease(preset.disease, {transition: false});
     }
     if (!showAllViews && currentView !== "workspace") {
         switchView("workspace");
     }
+    whyExpanded = false;
+    const techDetails = byId("techDetails");
+    if (techDetails) techDetails.open = false;
     fillFormInputs(preset.inputs);
     updatePresetHighlight(preset.id);
+    markResultStale();
     byId("diagnosisForm")?.requestSubmit?.();
 }
 
@@ -558,17 +579,17 @@ function fillFormInputs(values) {
         const card = numInput?.closest?.(".field");
         const slider = card?.querySelector?.(".metric-slider");
         const toggle = card?.querySelector?.(".missing-toggle");
-        const preview = card?.querySelector?.(".field-preview");
         if (!numInput) continue;
 
         if (val === null || val === undefined || val === "") {
             numInput.value = "";
+            numInput.placeholder = "Chưa biết";
             card?.classList?.add("is-missing");
             toggle?.setAttribute?.("aria-pressed", "true");
             if (slider) slider.disabled = true;
-            if (preview) updateFieldPreview(preview, field, null, true, disease.dataset);
         } else {
             numInput.value = String(val);
+            numInput.placeholder = "";
             card?.classList?.remove("is-missing");
             toggle?.setAttribute?.("aria-pressed", "false");
             if (slider) {
@@ -576,93 +597,11 @@ function fillFormInputs(values) {
                 syncSliderVars(slider, Number(val));
                 slider.setAttribute("aria-valuetext", numberFormat.format(Number(val)));
             }
-            if (preview) updateFieldPreview(preview, field, Number(val), false, disease.dataset);
-        }
-    }
-    updateWaitingPlaceholder();
-}
-
-/* ===== Disease Selection, Live Placeholder, Live What-If & Form Rendering ===== */
-const TARGET_RULE_CONDS = {
-    cleveland: [["age_at_least_55", "chol_elevated"]],
-    pima: [["age_35_to_70", "bmi_elevated"], ["age_35_to_70", "bmi_higher"]],
-    ilpd: [],
-    ckd: [],
-};
-
-const SHORT_MODEL_NAMES = {
-    "Gaussian Naive Bayes": "Gaussian NB",
-    "K-Nearest Neighbors": "KNN (k=7)",
-    "Logistic Regression": "Logistic Reg.",
-    "Decision Tree (ID3)": "Decision Tree",
-    "Ensemble Voting": "Ensemble",
-};
-
-function updateWaitingPlaceholder() {
-    const disease = diseases[currentDisease];
-    const form = byId("diagnosisForm");
-    if (!disease || !form) return;
-
-    const values = {};
-    let filledCount = 0;
-    const chipsBox = byId("waitInputChips");
-    if (chipsBox) chipsBox.replaceChildren();
-
-    for (const field of disease.fields) {
-        const el = form.elements?.namedItem?.("inputs." + field.key);
-        const raw = el?.value ?? "";
-        const isMissing = raw === "";
-        const num = isMissing ? null : Number(raw);
-        values[field.key] = Number.isFinite(num) ? num : null;
-        if (!isMissing) filledCount++;
-
-        if (chipsBox) {
-            const label = field.key + ": " + (isMissing ? "Chưa biết" : (Number.isFinite(num) ? numberFormat.format(num) : raw));
-            chipsBox.append(make("span", label, "bp-chip" + (isMissing ? " is-missing" : "")));
-        }
-    }
-
-    const nodeInputs = byId("waitNodeInputs");
-    if (nodeInputs) nodeInputs.textContent = filledCount + "/" + disease.fields.length + " chỉ số";
-
-    const nodeRules = byId("waitNodeRules");
-    const rulePreview = byId("waitRulePreview");
-    const ruleDefs = TARGET_RULE_CONDS[disease.dataset] || [];
-    if (!disease.has_target_rules) {
-        if (nodeRules) nodeRules.textContent = "Chưa có luật";
-        if (rulePreview) {
-            rulePreview.textContent = "Chỉ chạy ML · chưa có luật đích";
-            rulePreview.classList?.remove("is-match");
-        }
-    } else {
-        const factTruth = {};
-        for (const [feat, specs] of Object.entries(DATASET_FACT_SPECS[disease.dataset] || {})) {
-            for (const spec of specs) {
-                const m = evalFactMembership(values[feat], spec);
-                factTruth[spec.key] = m !== null && m > 0.5;
-            }
-        }
-        const expectedMatches = ruleDefs.filter(conds => conds.every(c => factTruth[c] === true)).length;
-        if (nodeRules) nodeRules.textContent = expectedMatches ? (expectedMatches + " luật dự khớp") : "0 luật dự khớp";
-        if (rulePreview) {
-            rulePreview.textContent = expectedMatches
-                ? ("Dự kiến kích hoạt " + expectedMatches + " luật đích")
-                : "Chưa đạt tiền đề luật đích";
-            rulePreview.classList?.toggle("is-match", expectedMatches > 0);
         }
     }
 }
 
-function replayWaitingPulse() {
-    if (prefersReducedMotion()) return;
-    const animated = byId("emptyState")?.querySelectorAll?.(".flow-pulse, .bp-arc-sweep, .bp-shimmer") || [];
-    for (const el of animated) {
-        el.style.animation = "none";
-        void el.getBoundingClientRect?.();
-        el.style.animation = "";
-    }
-}
-
+/* ===== Disease Selection, Live What-If & Form Rendering ===== */
 function scheduleLiveDiagnosis() {
     if (!liveAutoRun) return;
     clearTimeout(liveDebounceTimer);
@@ -676,10 +615,11 @@ function scheduleLiveDiagnosis() {
 
 function selectDisease(key, {transition = true} = {}) {
     const perform = () => {
-        clearTimeout(liveDebounceTimer);
+        cancelPendingDiagnosis();
         currentDisease = key;
         selection++;
         activePresetId = null;
+        whyExpanded = false;
         updatePresetHighlight(null);
         const disease = diseases[key];
         for (const tab of byId("diseaseTabs").children) {
@@ -689,13 +629,11 @@ function selectDisease(key, {transition = true} = {}) {
         const dataset = disease.dataset.toUpperCase();
         byId("outputDataset").textContent = dataset + (disease.has_target_rules ? " · ML + Hệ luật" : " · Chỉ ML");
         byId("modelDataset").textContent = dataset + " · Kiểm chứng chéo 5-fold";
-        byId("emptyState").querySelector(".flow")?.classList.toggle("ml-only", !disease.has_target_rules);
-        const nodeModel = byId("waitNodeModel");
-        if (nodeModel) nodeModel.textContent = "Đang tải…";
+        updateInputInfoPopover(disease);
+        const techDetails = byId("techDetails");
+        if (techDetails) techDetails.open = false;
         renderForm(disease);
-        updateWaitingPlaceholder();
         clearResult();
-        replayWaitingPulse();
         loadModelStats(key, selection);
     };
 
@@ -708,7 +646,7 @@ function selectDisease(key, {transition = true} = {}) {
 
 async function start() {
     initThemeToggle();
-    initGlossaryPopover();
+    initPopovers();
     initCopyCommands();
     initNavigation();
     initModelTableSorting();
@@ -719,34 +657,30 @@ async function start() {
         loadHistory();
         showToast("Đã làm mới lịch sử từ SQLite.");
     });
-    byId("presetPrevBtn")?.addEventListener("click", () => stepPreset(-1));
-    byId("presetNextBtn")?.addEventListener("click", () => stepPreset(1));
 
-    byId("waitRunBtn")?.addEventListener("click", () => {
+    byId("staleRerunBtn")?.addEventListener("click", () => {
         byId("diagnosisForm")?.requestSubmit?.();
-    });
-    byId("waitDemoBtn")?.addEventListener("click", () => {
-        const c5 = DEMO_PRESETS.find(p => p.id === "c5");
-        if (c5) applyPreset(c5);
     });
 
     byId("liveAutoToggle")?.addEventListener("click", event => {
         liveAutoRun = !liveAutoRun;
+        if (!liveAutoRun) clearTimeout(liveDebounceTimer);
         event.currentTarget.setAttribute("aria-pressed", String(liveAutoRun));
         showToast(liveAutoRun
-            ? "Đã bật tự chạy suy luận khi kéo thanh trượt."
-            : "Đã tắt tự chạy — bấm Chạy suy luận để cập nhật.");
+            ? "Đã bật tự chạy khi kéo thanh trượt."
+            : "Đã tắt tự chạy khi kéo.");
         if (liveAutoRun) scheduleLiveDiagnosis();
     });
 
     byId("resetDefaultsBtn")?.addEventListener("click", () => {
         const disease = diseases[currentDisease];
         if (!disease) return;
+        cancelPendingDiagnosis();
         const defaults = Object.fromEntries(disease.fields.map(f => [f.key, f.default]));
         fillFormInputs(defaults);
         updatePresetHighlight(null);
         markResultStale();
-        showToast("Đã đặt lại chỉ số mặc định của " + disease.name + ".");
+        showToast("Đã đặt lại chỉ số mặc định.");
         if (liveAutoRun) scheduleLiveDiagnosis();
     });
 
@@ -792,35 +726,148 @@ async function start() {
     loadHistory();
 }
 
+function setSubmitStale(isStale) {
+    const submit = byId("diagnosisForm")?.querySelector?.("button[type=submit]");
+    if (!submit) return;
+    submit.classList?.toggle("is-stale", isStale);
+    submit.textContent = isStale ? "Chạy lại suy luận" : "Chạy suy luận";
+}
+
 function clearResult() {
     byId("loading").hidden = true;
     byId("resultSection").hidden = true;
     byId("resultSection").classList?.remove("is-stale");
     const stale = byId("staleNotice");
     if (stale) stale.hidden = true;
+    setSubmitStale(false);
     byId("emptyState").hidden = false;
 }
 
+function cancelPendingDiagnosis() {
+    clearTimeout(liveDebounceTimer);
+    diagnosisRequest++;
+    const form = byId("diagnosisForm");
+    if (form) {
+        form.inert = false;
+        const submit = form.querySelector?.("button[type=submit]");
+        if (submit) submit.disabled = false;
+    }
+    const loading = byId("loading");
+    if (loading) loading.hidden = true;
+    if (byId("resultSection")?.hidden && byId("emptyState")) {
+        byId("emptyState").hidden = false;
+    }
+}
+
 function markResultStale() {
+    inputRevision++;
     const section = byId("resultSection");
     if (section && !section.hidden) {
         section.classList?.add("is-stale");
         const stale = byId("staleNotice");
         if (stale) stale.hidden = false;
+        setSubmitStale(true);
     }
+}
+
+/* ===== Accessible Inline Field Error Helpers ===== */
+function linkFieldError(input, shown) {
+    const errorId = input.dataset?.error;
+    if (!errorId) return;
+    const ids = (input.getAttribute?.("aria-describedby") || "")
+        .split(/\s+/)
+        .filter(id => id && id !== errorId);
+    if (shown) ids.push(errorId);
+    if (ids.length) input.setAttribute?.("aria-describedby", ids.join(" "));
+    else input.removeAttribute?.("aria-describedby");
+}
+
+function announceFieldError(input, message) {
+    const announcer = byId("formErrorAnnouncer");
+    if (!announcer) return;
+    const label = input.labels?.[0]?.textContent?.trim();
+    clearTimeout(errorAnnounceTimer);
+    announcer.textContent = "";
+    announcedErrorField = input;
+    errorAnnounceTimer = setTimeout(() => {
+        announcer.textContent = (label ? label + ": " : "") + message;
+    }, 500);
+}
+
+function setFieldError(input, message, {announce = false} = {}) {
+    const errorId = input.dataset?.error;
+    const errEl = errorId ? byId(errorId) : null;
+    const card = input.closest?.(".field");
+    if (errEl) {
+        const icon = make("span", "!", "field-error-icon");
+        icon.setAttribute?.("role", "img");
+        icon.setAttribute?.("aria-label", "Lỗi");
+        errEl.replaceChildren(icon, make("span", message));
+        errEl.hidden = false;
+    }
+    input.classList?.add("is-invalid");
+    card?.classList?.add("has-error");
+    input.setAttribute?.("aria-invalid", "true");
+    linkFieldError(input, true);
+    if (announce) announceFieldError(input, message);
+}
+
+function clearFieldError(input) {
+    const errorId = input.dataset?.error;
+    const errEl = errorId ? byId(errorId) : null;
+    const card = input.closest?.(".field");
+    if (errEl) {
+        errEl.replaceChildren();
+        errEl.hidden = true;
+    }
+    input.classList?.remove("is-invalid");
+    card?.classList?.remove("has-error");
+    input.setAttribute?.("aria-invalid", "false");
+    linkFieldError(input, false);
+    if (announcedErrorField === input) {
+        clearTimeout(errorAnnounceTimer);
+        const announcer = byId("formErrorAnnouncer");
+        if (announcer) announcer.textContent = "";
+        announcedErrorField = null;
+    }
+}
+
+function validateSingleField(input, field, dataset, {announce = false} = {}) {
+    if (input.validity?.badInput) {
+        setFieldError(input, formatFieldGuidance(field, dataset, "badInput"), {announce});
+        return false;
+    }
+    if (input.value === "") {
+        clearFieldError(input);
+        return true;
+    }
+    const num = Number(input.value);
+    if (!Number.isFinite(num)) {
+        setFieldError(input, formatFieldGuidance(field, dataset, "badInput"), {announce});
+        return false;
+    }
+    if (num < field.min || num > field.max) {
+        setFieldError(input, formatFieldGuidance(field, dataset, "range"), {announce});
+        return false;
+    }
+    if (field.key === "age" && !Number.isInteger(num)) {
+        setFieldError(input, formatFieldGuidance(field, dataset, "integer"), {announce});
+        return false;
+    }
+    clearFieldError(input);
+    return true;
 }
 
 function renderForm(disease) {
     const form = byId("diagnosisForm");
     form.inert = false;
-    form.replaceChildren(
-        make("p", "Kéo thanh trượt hoặc nhập số trực tiếp. Gạt \"Chưa biết\" để gửi null (ML dùng trung vị train, luật giữ chưa biết).", "hint")
-    );
+    form.replaceChildren();
 
     for (const field of disease.fields) {
         const group = make("div", undefined, "field");
         const top = make("div", undefined, "field-top");
-        const label = make("label", field.label);
+        const displayLabel = cleanFieldLabel(field);
+        const label = make("label", displayLabel);
         const input = make("input");
         input.type = "number";
         input.id = "field_" + field.key;
@@ -830,12 +877,14 @@ function renderForm(disease) {
         input.max = String(field.max);
         input.step = String(field.step || 1);
         input.inputMode = field.step && field.step < 1 ? "decimal" : "numeric";
+        input.setAttribute("aria-invalid", "false");
+        input.dataset.error = input.id + "_error";
         label.htmlFor = input.id;
 
         const missingBtn = make("button", "Chưa biết", "missing-toggle");
         missingBtn.type = "button";
         missingBtn.setAttribute("aria-pressed", "false");
-        missingBtn.setAttribute("aria-label", "Đánh dấu " + field.label + " là chưa biết");
+        missingBtn.setAttribute("aria-label", "Đánh dấu " + displayLabel + " là chưa biết");
         top.append(label, missingBtn);
 
         const range = make("small", numberFormat.format(field.min) + " – " + numberFormat.format(field.max));
@@ -844,52 +893,52 @@ function renderForm(disease) {
         const entry = make("div", undefined, "entry");
         entry.append(input, range);
 
-        const sliderWrap = make("div", undefined, "slider-wrap");
-        const zones = buildFuzzyZoneStrip(field, disease.dataset);
-        if (zones) sliderWrap.append(zones);
+        const fieldError = make("p", undefined, "field-error");
+        fieldError.id = input.id + "_error";
+        fieldError.hidden = true;
 
+        const sliderWrap = make("div", undefined, "slider-wrap");
         const slider = make("input", undefined, "metric-slider");
         slider.type = "range";
         slider.min = String(field.min);
         slider.max = String(field.max);
         slider.step = String(field.step || 1);
-        slider.setAttribute("aria-label", "Thanh trượt " + field.label);
+        slider.setAttribute("aria-label", "Thanh trượt " + displayLabel);
         syncSliderVars(slider, Number(field.default));
         slider.setAttribute("aria-valuetext", numberFormat.format(Number(field.default)));
         sliderWrap.append(slider);
-
-        const preview = make("div", undefined, "field-preview");
-        updateFieldPreview(preview, field, Number(field.default), false, disease.dataset);
 
         let savedBeforeMissing = String(field.default);
 
         slider.addEventListener("input", () => {
             const val = Number(slider.value);
             input.value = slider.value;
+            input.placeholder = "";
             savedBeforeMissing = slider.value;
             syncSliderVars(slider, val);
             slider.setAttribute("aria-valuetext", numberFormat.format(val));
             group.classList.remove("is-missing");
             missingBtn.setAttribute("aria-pressed", "false");
-            updateFieldPreview(preview, field, val, false, disease.dataset);
-            clearErrors(form);
+            clearFieldError(input);
+            clearFormErrorList();
             updatePresetHighlight(null);
-            updateWaitingPlaceholder();
             markResultStale();
             scheduleLiveDiagnosis();
         });
 
         input.addEventListener("input", () => {
-            clearErrors(form);
+            clearFormErrorList();
             updatePresetHighlight(null);
             markResultStale();
-            if (input.value === "") {
+            if (input.value === "" && !input.validity?.badInput) {
+                input.placeholder = "Chưa biết";
                 group.classList.add("is-missing");
                 missingBtn.setAttribute("aria-pressed", "true");
                 slider.disabled = true;
-                updateFieldPreview(preview, field, null, true, disease.dataset);
+                clearFieldError(input);
             } else {
                 const num = Number(input.value);
+                input.placeholder = "";
                 savedBeforeMissing = input.value;
                 group.classList.remove("is-missing");
                 missingBtn.setAttribute("aria-pressed", "false");
@@ -898,39 +947,44 @@ function renderForm(disease) {
                     syncSliderVars(slider, num);
                     slider.setAttribute("aria-valuetext", numberFormat.format(num));
                 }
-                updateFieldPreview(preview, field, num, false, disease.dataset);
+                if (input.classList.contains("is-invalid")) {
+                    validateSingleField(input, field, disease.dataset, {announce: false});
+                }
             }
-            updateWaitingPlaceholder();
+        });
+
+        input.addEventListener("blur", () => {
+            validateSingleField(input, field, disease.dataset, {announce: true});
         });
 
         missingBtn.addEventListener("click", () => {
             const makeMissing = missingBtn.getAttribute("aria-pressed") !== "true";
-            clearErrors(form);
+            clearFieldError(input);
+            clearFormErrorList();
             updatePresetHighlight(null);
             markResultStale();
             if (makeMissing) {
                 if (input.value !== "") savedBeforeMissing = input.value;
                 input.value = "";
+                input.placeholder = "Chưa biết";
                 slider.disabled = true;
                 group.classList.add("is-missing");
                 missingBtn.setAttribute("aria-pressed", "true");
-                updateFieldPreview(preview, field, null, true, disease.dataset);
             } else {
                 const restored = savedBeforeMissing || String(field.default);
                 input.value = restored;
+                input.placeholder = "";
                 slider.disabled = false;
                 group.classList.remove("is-missing");
                 missingBtn.setAttribute("aria-pressed", "false");
                 syncSliderVars(slider, Number(restored));
                 slider.setAttribute("aria-valuetext", numberFormat.format(Number(restored)));
-                updateFieldPreview(preview, field, Number(restored), false, disease.dataset);
                 input.focus();
             }
-            updateWaitingPlaceholder();
             scheduleLiveDiagnosis();
         });
 
-        group.append(top, entry, sliderWrap, preview);
+        group.append(top, entry, fieldError, sliderWrap);
         form.append(group);
     }
 
@@ -944,34 +998,50 @@ function renderForm(disease) {
     form.onsubmit = event => runDiagnosis(event, {preserveFocus: false});
 }
 
-function clearErrors(form) {
+function clearFormErrorList() {
     const errList = byId("diagnosisErrors");
     if (errList) {
         errList.replaceChildren();
         errList.hidden = true;
     }
-    for (const input of form.querySelectorAll(".is-invalid")) {
-        input.classList.remove("is-invalid");
-        input.removeAttribute("aria-invalid");
-        input.setAttribute("aria-describedby", input.id + "_range");
+}
+
+function clearErrors(form) {
+    clearFormErrorList();
+    for (const input of form.querySelectorAll?.('input[type="number"]') || []) {
+        clearFieldError(input);
     }
 }
 
 function showErrors(form, errors) {
     const list = byId("diagnosisErrors");
+    const disease = diseases[currentDisease];
+    const fieldByKey = Object.fromEntries((disease?.fields || []).map(f => [f.key, f]));
     list.replaceChildren();
+    let hasGeneralError = false;
+
     for (const [path, message] of Object.entries(errors)) {
-        const li = make("li", message);
-        li.id = "error_" + path.replaceAll(".", "_");
-        list.append(li);
         const input = form.elements.namedItem(path);
-        if (input) {
-            input.classList.add("is-invalid");
-            input.setAttribute("aria-invalid", "true");
-            input.setAttribute("aria-describedby", input.id + "_range " + li.id);
+        if (input && path.startsWith("inputs.")) {
+            const key = path.slice("inputs.".length);
+            const field = fieldByKey[key];
+            let inlineMsg = message;
+            if (field && disease) {
+                if (/trong khoảng|số nguyên/i.test(message)) {
+                    inlineMsg = formatFieldGuidance(field, disease.dataset, "range");
+                } else if (/số hợp lệ|hữu hạn|phải là số/i.test(message)) {
+                    inlineMsg = formatFieldGuidance(field, disease.dataset, "badInput");
+                }
+            }
+            setFieldError(input, inlineMsg, {announce: false});
+        } else {
+            const li = make("li", message);
+            li.id = "error_" + path.replaceAll(".", "_");
+            list.append(li);
+            hasGeneralError = true;
         }
     }
-    list.hidden = false;
+    list.hidden = !hasGeneralError;
     form.querySelector(".is-invalid")?.focus();
 }
 
@@ -986,7 +1056,9 @@ async function runDiagnosis(event, {preserveFocus = false} = {}) {
     const errors = {};
     for (const field of disease.fields) {
         const el = form.elements.namedItem("inputs." + field.key);
-        if (el.validity.badInput) errors[el.name] = field.label + " cần một giá trị số hợp lệ.";
+        if (el.validity.badInput) {
+            errors[el.name] = formatFieldGuidance(field, disease.dataset, "badInput");
+        }
         inputs[field.key] = el.value === "" ? null : el.value;
     }
     if (Object.keys(errors).length) {
@@ -995,6 +1067,9 @@ async function runDiagnosis(event, {preserveFocus = false} = {}) {
         return;
     }
 
+    const requestId = ++diagnosisRequest;
+    const revision = inputRevision;
+    const isCurrentRequest = () => version === selection && requestId === diagnosisRequest;
     if (!preserveFocus) form.inert = true;
     const submit = form.querySelector("button[type=submit]");
     submit.disabled = true;
@@ -1009,14 +1084,13 @@ async function runDiagnosis(event, {preserveFocus = false} = {}) {
             body: JSON.stringify({disease: currentDisease, inputs}),
         });
         loadHistory();
-        if (version !== selection) return;
-        const prev = lastScoresByDisease[currentDisease];
-        renderTrace(data.trace, disease, prev);
-        lastScoresByDisease[currentDisease] = data.trace.result.combined_score;
+        if (!isCurrentRequest() || revision !== inputRevision) return;
+        renderTrace(data.trace, disease, {preserveWhy: preserveFocus});
         byId("resultSection").hidden = false;
         byId("resultSection").classList?.remove("is-stale");
         const stale = byId("staleNotice");
         if (stale) stale.hidden = true;
+        setSubmitStale(false);
         if (!preserveFocus) {
             byId("outputTitle").focus({preventScroll: true});
             if (typeof window !== "undefined" && window.matchMedia?.("(max-width: 980px)").matches) {
@@ -1024,129 +1098,21 @@ async function runDiagnosis(event, {preserveFocus = false} = {}) {
             }
         }
     } catch (error) {
-        if (version !== selection) return;
+        if (!isCurrentRequest() || revision !== inputRevision) return;
         form.inert = false;
         clearResult();
         showErrors(form, error.fields || {body: "Chưa nhận được kết quả. Vui lòng thử lại."});
     } finally {
-        if (version === selection) {
+        if (isCurrentRequest()) {
             form.inert = false;
             submit.disabled = false;
             byId("loading").hidden = true;
+            if (byId("resultSection").hidden) byId("emptyState").hidden = false;
         }
     }
 }
 
-/* ===== Animated Figures: Score Count-Up, SVG Gauge, Compare Strip, Pipeline & Fuzzy Curve ===== */
-function animateScoreValue(el, fromScore, toScore) {
-    if (typeof cancelAnimationFrame === "function" && scoreCountRaf) {
-        cancelAnimationFrame(scoreCountRaf);
-        scoreCountRaf = null;
-    }
-    if (typeof requestAnimationFrame !== "function" || typeof performance === "undefined" || prefersReducedMotion()) {
-        el.textContent = scoreFormat.format(toScore);
-        return;
-    }
-    const startVal = typeof fromScore === "number" && Number.isFinite(fromScore) ? fromScore : 0;
-    const duration = 500;
-    const t0 = performance.now();
-    const tick = now => {
-        const p = Math.min(1, (now - t0) / duration);
-        const eased = 1 - Math.pow(1 - p, 3);
-        el.textContent = scoreFormat.format(startVal + (toScore - startVal) * eased);
-        if (p < 1) {
-            scoreCountRaf = requestAnimationFrame(tick);
-        } else {
-            el.textContent = scoreFormat.format(toScore);
-            scoreCountRaf = null;
-        }
-    };
-    scoreCountRaf = requestAnimationFrame(tick);
-}
-
-function buildSupportGauge(combined, mlScore, ruleScore) {
-    const svg = makeSvg("svg", {viewBox: "0 0 180 114", class: "gauge-svg", "aria-hidden": "true"});
-    if (!svg) return null;
-    const cx = 90, cy = 94, r = 68;
-    const clamp = v => Math.min(1, Math.max(0, v));
-    const pt = frac => {
-        const ang = Math.PI * (1 - clamp(frac));
-        return [cx + r * Math.cos(ang), cy - r * Math.sin(ang)];
-    };
-    const arcLen = Math.PI * r;
-    const clampedCombined = clamp(combined);
-
-    const bgPath = makeSvg("path", {
-        d: `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`,
-        fill: "none", stroke: "var(--surface-3)", "stroke-width": 13, "stroke-linecap": "round",
-    });
-    const fgPath = makeSvg("path", {
-        d: `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`,
-        fill: "none", stroke: "var(--tone-accent)", "stroke-width": 13, "stroke-linecap": "round",
-        class: "gauge-arc-fg",
-    });
-    fgPath.style?.setProperty?.("--arc-total", arcLen.toFixed(1));
-    fgPath.style?.setProperty?.("--arc-offset", (arcLen * (1 - clampedCombined)).toFixed(1));
-
-    // 50% threshold tick at top center
-    const tick = makeSvg("line", {
-        x1: cx, y1: cy - r - 11, x2: cx, y2: cy - r + 11,
-        stroke: "var(--ink)", "stroke-width": 2, "stroke-dasharray": "3 2", opacity: 0.72,
-    });
-    const tickLabel = makeSvg("text", {
-        x: cx, y: 11, "text-anchor": "middle", fill: "var(--muted)", "font-size": 10, "font-family": "var(--font-mono)",
-    });
-    tickLabel.textContent = "50%";
-    const leftLabel = makeSvg("text", {x: 16, y: 110, fill: "var(--muted)", "font-size": 9.5, "font-family": "var(--font-mono)"});
-    leftLabel.textContent = "0%";
-    const rightLabel = makeSvg("text", {x: 164, y: 110, "text-anchor": "end", fill: "var(--muted)", "font-size": 9.5, "font-family": "var(--font-mono)"});
-    rightLabel.textContent = "100%";
-
-    // Animated pointer needle sweeping to combined_score
-    const needleGroup = makeSvg("g", {class: "gauge-needle"});
-    const deg = -90 + clampedCombined * 180;
-    needleGroup.style?.setProperty?.("--needle-deg", deg.toFixed(1) + "deg");
-    needleGroup.append(
-        makeSvg("line", {x1: cx, y1: cy, x2: cx, y2: cy - r + 14, stroke: "var(--tone-accent)", "stroke-width": 2.4, "stroke-linecap": "round"}),
-        makeSvg("circle", {cx, cy, r: 4.5, fill: "var(--tone-accent)", stroke: "var(--surface)", "stroke-width": 2})
-    );
-
-    svg.append(bgPath, fgPath, tick, tickLabel, leftLabel, rightLabel, needleGroup);
-
-    // Marker pins for ML and Rule with spring pop-in
-    const [mx, my] = pt(mlScore);
-    const mlPin = makeSvg("circle", {cx: mx.toFixed(1), cy: my.toFixed(1), r: 4.8, fill: "var(--brand)", stroke: "var(--surface)", "stroke-width": 2, class: "gauge-pin"});
-    mlPin.style?.setProperty?.("--delay", "240ms");
-    const mlTitle = makeSvg("title");
-    mlTitle.textContent = "ML: " + scoreFormat.format(mlScore);
-    mlPin.append(mlTitle);
-    svg.append(mlPin);
-
-    if (ruleScore !== null) {
-        const [rx, ry] = pt(ruleScore);
-        const ripple = makeSvg("circle", {cx: rx.toFixed(1), cy: ry.toFixed(1), r: 5, fill: "none", stroke: "var(--conflict-accent)", "stroke-width": 1.6, class: "gauge-pin-pulse"});
-        const rulePin = makeSvg("circle", {cx: rx.toFixed(1), cy: ry.toFixed(1), r: 4.8, fill: "var(--conflict-accent)", stroke: "var(--surface)", "stroke-width": 2, class: "gauge-pin"});
-        rulePin.style?.setProperty?.("--delay", "360ms");
-        const ruleTitle = makeSvg("title");
-        ruleTitle.textContent = "Hệ luật: " + scoreFormat.format(ruleScore);
-        rulePin.append(ruleTitle);
-        svg.append(ripple, rulePin);
-    }
-
-    const wrap = make("div", undefined, "gauge-wrap");
-    const legend = make("div", undefined, "gauge-legend");
-    const mlKey = make("span", undefined, "gauge-key");
-    mlKey.append(make("i"), "ML");
-    legend.append(mlKey);
-    if (ruleScore !== null) {
-        const ruleKey = make("span", undefined, "gauge-key is-rule");
-        ruleKey.append(make("i"), "Luật");
-        legend.append(ruleKey);
-    }
-    wrap.append(svg, legend);
-    return wrap;
-}
-
+/* ===== Comparison, Pipeline & Fuzzy Curve ===== */
 function buildCompareStrip(mlScore, ruleScore, combinedScore) {
     const strip = make("div", undefined, "compare-strip");
     const items = [
@@ -1283,7 +1249,7 @@ function renderLivePipeline(trace, disease, missing) {
     const mlNode = make("div", undefined, "pipe-node");
     mlNode.style?.setProperty?.("--delay", "20ms");
     mlNode.append(
-        make("small", "Nhánh ML" + (missing.length ? " (điền trung vị)" : "")),
+        make("small", "Nhánh ML · " + trace.ml.model + (missing.length ? " (điền trung vị)" : "")),
         make("strong", "p = " + mathFormat.format(trace.ml.score))
     );
 
@@ -1323,12 +1289,12 @@ function renderLivePipeline(trace, disease, missing) {
         );
     }
 
-    container.replaceChildren(head, nodes, formula);
+    container.replaceChildren(head, buildCompareStrip(trace.ml.score, result.rule_score, result.combined_score), nodes, formula);
     container.hidden = false;
 }
 
-/* ===== Main Trace Renderer (preserves exact tests/test_trace_ui.py contract) ===== */
-function renderTrace(trace, disease, previousScore) {
+/* ===== Main Trace Renderer ===== */
+function renderTrace(trace, disease, {preserveWhy = false} = {}) {
     const result = trace.result;
     const inputs = byId("traceInputs");
     const facts = byId("traceFacts");
@@ -1346,9 +1312,10 @@ function renderTrace(trace, disease, previousScore) {
         if (value == null) missing.push(field.key);
         const item = make("li", undefined, "trace-input-chip" + (value == null ? " is-missing" : ""));
         item.style?.setProperty?.("--delay", (idx * 45) + "ms");
-        const showUnit = unit && unit !== "years" && !field.label.includes(unit);
+        const labelText = cleanFieldLabel(field);
+        const showUnit = unit && unit !== "years" && !labelText.includes(unit);
         item.append(
-            make("span", field.label + " · "),
+            make("span", labelText + " · "),
             make("strong", value == null ? "Chưa biết" : (numberFormat.format(value) + (showUnit ? " " + unit : "")))
         );
         inputs.append(item);
@@ -1428,81 +1395,135 @@ function renderTrace(trace, disease, previousScore) {
         rules.append(make("li", disease.has_target_rules ? "Chưa có luật nào khớp." : "Bộ dữ liệu này chưa có luật đích.", "trace-empty"));
     }
 
-    // Semantic tone + disagreement detection
-    const tone = result.predicted_label === 0
+    // Semantic tone & streamlined presentation-first result
+    const mlScore = trace.ml.score;
+    const ruleScore = result.rule_score;
+    const combined = result.combined_score;
+    const mlPos = mlScore >= 0.5;
+    const finalPos = result.predicted_label === 1;
+    const scoreIncreased = ruleScore !== null && combined > mlScore + 1e-4;
+    const isOpen = preserveWhy ? whyExpanded : false;
+    whyExpanded = isOpen;
+
+    const tone = !finalPos
         ? "negative"
-        : (result.combined_score >= 0.7 ? "high" : "moderate");
+        : (combined >= 0.7 ? "high" : "moderate");
     summary.setAttribute?.("data-tone", tone);
 
-    const topRow = make("div", undefined, "score-top");
-    topRow.append(make("p", "Điểm hỗ trợ kết hợp", "score-label"));
-    const badges = make("div", undefined, "score-badges");
-    const verdictText = "Nhãn " + result.predicted_label + " · Lớp " + (result.predicted_label ? "dương" : "âm") + " của " + trace.target.toUpperCase();
-    badges.append(make("span", verdictText, "verdict-badge"));
-    if (typeof previousScore === "number" && Number.isFinite(previousScore)) {
-        const diffPts = (result.combined_score - previousScore) * 100;
-        const deltaText = Math.abs(diffPts) < 0.05
-            ? "= Không đổi"
-            : ((diffPts > 0 ? "▲ +" : "▼ ") + numberFormat.format(diffPts) + " điểm %");
-        badges.append(make("span", deltaText, "delta-badge"));
-    }
-    topRow.append(badges);
-
-    const hero = make("div", undefined, "score-hero");
-    const heroText = make("div");
-    const scoreValueEl = make("strong", scoreFormat.format(result.combined_score), "score-value");
-    heroText.append(
-        scoreValueEl,
-        make("p", result.predicted_label ? "Vượt ngưỡng quyết định 50%" : "Dưới ngưỡng quyết định 50%", "score-sub")
-    );
-    hero.append(heroText);
-    const gauge = buildSupportGauge(result.combined_score, trace.ml.score, result.rule_score);
-    if (gauge) {
-        const gaugeBox = make("div", undefined, "gauge-box");
-        gaugeBox.append(gauge);
-        hero.append(gaugeBox);
-    }
-
-    const compareStrip = buildCompareStrip(trace.ml.score, result.rule_score, result.combined_score);
-
-    // Preserve exact .score-grid structure expected by tests/test_trace_ui.py
-    const grid = make("div", undefined, "score-grid");
-    const model = make("div");
-    model.append(make("small", "ML · " + trace.ml.model), make("b", scoreFormat.format(trace.ml.score)));
-    const rule = make("div");
-    rule.append(make("small", "Hệ luật"), make("b", result.rule_score === null ? "Chưa có điểm" : scoreFormat.format(result.rule_score)));
-    grid.append(model, rule);
-
-    summary.replaceChildren(topRow, hero, compareStrip, grid);
-    animateScoreValue(scoreValueEl, previousScore, result.combined_score);
-
-    // Highlight ML vs Rules disagreement when both sides sit across 0.5
-    if (result.rule_score !== null) {
-        const mlPos = trace.ml.score >= 0.5;
-        const rulePos = result.rule_score >= 0.5;
-        if (mlPos !== rulePos) {
-            const banner = make("p", undefined, "conflict-banner");
-            const icon = make("span", "⇄", "conflict-icon");
-            icon.setAttribute?.("aria-hidden", "true");
-            const body = make("span");
-            const strong = make("strong", "ML và Hệ luật bất đồng: ");
-            const detail = mlPos
-                ? ("ML vượt ngưỡng (" + scoreFormat.format(trace.ml.score) + ") trong khi điểm luật ở dưới 50% (" + scoreFormat.format(result.rule_score) + ").")
-                : ("ML ở dưới ngưỡng (" + scoreFormat.format(trace.ml.score) + ") nhưng luật đích đạt " + scoreFormat.format(result.rule_score) + ", kéo điểm kết hợp lên " + scoreFormat.format(result.combined_score) + ".");
-            body.append(strong, detail);
-            banner.append(icon, body);
-            summary.append(banner);
+    let verdictText;
+    const thresholdWord = combined === 0.5 ? "đạt" : "vượt";
+    if (ruleScore !== null) {
+        if (!mlPos && finalPos) {
+            verdictText = "Điểm " + thresholdWord + " ngưỡng 50% sau khi kết hợp luật.";
+        } else if (finalPos) {
+            verdictText = scoreIncreased
+                ? "Điểm " + thresholdWord + " ngưỡng 50% và tăng thêm khi kết hợp luật."
+                : "Điểm " + thresholdWord + " ngưỡng 50% sau khi kết hợp luật.";
+        } else {
+            verdictText = "Điểm vẫn dưới ngưỡng 50% sau khi kết hợp luật.";
         }
+    } else {
+        verdictText = finalPos
+            ? "Điểm " + thresholdWord + " ngưỡng 50% theo mô hình ML."
+            : "Điểm dưới ngưỡng 50% theo mô hình ML.";
+    }
+    const verdictEl = make("p", verdictText, "result-verdict");
+
+    const scoreLine = make("div", undefined, "result-score-line");
+    const termWrap = make("span", undefined, "score-term");
+    termWrap.append(make("span", "Điểm hỗ trợ"));
+    const infoBtn = make("button", undefined, "info-btn");
+    infoBtn.type = "button";
+    infoBtn.setAttribute?.("popovertarget", "supportScoreInfo");
+    infoBtn.setAttribute?.("aria-label", "Giải thích Điểm hỗ trợ");
+    const infoGlyph = make("span", "ⓘ");
+    infoGlyph.setAttribute?.("aria-hidden", "true");
+    infoBtn.append(infoGlyph);
+    termWrap.append(infoBtn);
+
+    const transition = make("div", undefined, "score-transition");
+    const mlPart = make("span", undefined, "score-part is-ml");
+    const mlNumEl = make("strong", scoreFormat.format(mlScore), "score-ml-num");
+    mlPart.append(mlNumEl, make("span", "(ML)", "score-tag"));
+
+    if (disease.has_target_rules || ruleScore !== null) {
+        const arrow = make("span", "→", "score-arrow");
+        arrow.setAttribute?.("aria-hidden", "true");
+        const finalPart = make("span", undefined, "score-part is-final");
+        const finalNumEl = make("strong", scoreFormat.format(combined), "score-final-num");
+        finalPart.append(finalNumEl, make("span", "(ML + luật)", "score-tag"));
+        transition.append(mlPart, arrow, finalPart);
+    } else {
+        mlNumEl.className = "score-final-num";
+        transition.append(mlPart);
+    }
+    scoreLine.append(termWrap, transition);
+
+    const targetRules = trace.fired_rules.filter(r => r.used_in_fusion);
+    const secondaryRules = trace.fired_rules.filter(r => !r.used_in_fusion);
+    const boundaryFacts = derivedFacts.filter(f => f.membership !== null && Math.abs(f.membership - 0.5) < 1e-9);
+
+    let whyLabel = "Vì sao có kết quả này?";
+    if (scoreIncreased) {
+        whyLabel = "Vì sao điểm tăng?";
+    } else if (disease.has_target_rules && ruleScore === null) {
+        whyLabel = "Vì sao điểm không đổi?";
     }
 
-    if (result.rule_score === null) {
-        const reason = disease.has_target_rules ? "Không có luật đích nào khớp." : "Bộ dữ liệu này chưa có luật đích.";
-        summary.append(make("p", reason + " Điểm kết hợp bằng điểm ML.", "score-note"));
+    const whyRow = make("div", undefined, "why-row");
+    const whyBtn = make("button", undefined, "why-toggle");
+    whyBtn.type = "button";
+    whyBtn.setAttribute?.("aria-expanded", String(isOpen));
+    whyBtn.setAttribute?.("aria-controls", "whyExplainPanel");
+    whyBtn.append(make("span", whyLabel));
+    const whyChevron = make("span", "▾", "why-chevron");
+    whyChevron.setAttribute?.("aria-hidden", "true");
+    whyBtn.append(whyChevron);
+    whyRow.append(whyBtn);
+
+    let whySentence;
+    if (ruleScore !== null) {
+        if (!mlPos && finalPos) {
+            whySentence = "Mô hình ML cho điểm dưới ngưỡng (" + scoreFormat.format(mlScore) +
+                "), nhưng " + targetRules.length + " luật đích khớp đạt " + scoreFormat.format(ruleScore) +
+                ", kéo điểm kết hợp lên " + scoreFormat.format(combined) + ".";
+        } else if (targetRules.length > 1) {
+            whySentence = "Mô hình ML cho " + scoreFormat.format(mlScore) + " và có " + targetRules.length +
+                " luật đích cùng khớp (tổng điểm luật " + scoreFormat.format(ruleScore) +
+                "), gộp với ML một lần cho ra " + scoreFormat.format(combined) + ".";
+        } else {
+            whySentence = "Mô hình ML cho " + scoreFormat.format(mlScore) + " và có 1 luật đích khớp (" +
+                scoreFormat.format(ruleScore) + "), nâng điểm kết hợp lên " + scoreFormat.format(combined) + ".";
+        }
+        if (secondaryRules.length) {
+            whySentence += " Ngoài ra có " + secondaryRules.length + " luật phụ hiển thị trong Chi tiết kỹ thuật, không cộng vào điểm.";
+        }
+    } else if (disease.has_target_rules) {
+        whySentence = "Không có luật đích nào khớp với các chỉ số hiện tại, nên điểm kết hợp giữ nguyên theo ML.";
+        if (boundaryFacts.length) {
+            whySentence += " Dữ kiện ở đúng biên 50% chưa được tính là đúng; cần lớn hơn 50%.";
+        }
+    } else {
+        whySentence = "Bộ dữ liệu này chưa có luật đích nên điểm kết hợp giữ nguyên theo mô hình ML.";
     }
+
+    const whyPanel = make("div", undefined, "why-explain");
+    whyPanel.id = "whyExplainPanel";
+    whyPanel.hidden = !isOpen;
+    whyPanel.append(make("p", whySentence, "why-text"));
     if (missing.length) {
-        summary.append(make("p", "Đã nhập " + (disease.fields.length - missing.length) + "/" + disease.fields.length +
-            " chỉ số. ML dùng trung vị học từ train cho " + missing.join(", ") + ". Hệ luật giữ dữ kiện thiếu ở trạng thái chưa biết.", "score-note"));
+        const missingLabels = disease.fields.filter(field => missing.includes(field.key)).map(cleanFieldLabel);
+        whyPanel.append(make("p", "Đã nhập " + (disease.fields.length - missing.length) + "/" + disease.fields.length +
+            " chỉ số. ML dùng trung vị học từ train cho " + missingLabels.join(", ") + "; hệ luật giữ dữ kiện thiếu ở trạng thái chưa biết.", "why-note"));
     }
+
+    whyBtn.addEventListener?.("click", () => {
+        whyExpanded = !whyExpanded;
+        whyBtn.setAttribute("aria-expanded", String(whyExpanded));
+        whyPanel.hidden = !whyExpanded;
+    });
+
+    summary.replaceChildren(verdictEl, scoreLine, whyRow, whyPanel);
 
     renderLivePipeline(trace, disease, missing);
 }
@@ -1768,10 +1789,6 @@ async function loadModelStats(key, version) {
         if (brief) {
             brief.textContent = data.selected_model_name + (chosen?.f1 != null ? (" · F1 " + numberFormat.format(chosen.f1) + "%") : "");
         }
-        const nodeModel = byId("waitNodeModel");
-        if (nodeModel) {
-            nodeModel.textContent = SHORT_MODEL_NAMES[data.selected_model_name] || data.selected_model_name;
-        }
         if (badge) {
             badge.textContent = String(data.stats.length);
             badge.hidden = false;
@@ -1828,8 +1845,6 @@ async function loadModelStats(key, version) {
             currentModelData = null;
             status.textContent = error.fields?.model || "Chưa tải được thông tin mô hình.";
             if (brief) brief.textContent = "Chưa có artifact mô hình";
-            const nodeModel = byId("waitNodeModel");
-            if (nodeModel) nodeModel.textContent = "Chưa có";
         }
     }
 }

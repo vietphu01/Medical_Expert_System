@@ -231,7 +231,7 @@ Ca 4 có p = 5/7, c₁ = 0,50 và c₂ = 0,55.
 
 ## 3. Các tình huống demo thực tế
 
-Các thao tác dưới đây đã được kiểm tra trên giao diện đang có ngày 22/11/2026. Chọn **Suy luận → Đổi ca → Ca 5 · ML ≠ Luật**. Hệ thống tự chạy. Mở **Vì sao điểm tăng?** để xem ba điểm, rồi mở **Chi tiết kỹ thuật** để chỉ công thức, fact và ID luật. Chờ hiệu ứng số hoàn tất trước khi đọc điểm.
+Các thao tác dưới đây đã được kiểm tra trên giao diện ngày 22/11/2026. Chọn **Suy luận → Đổi ca → Ca 5 · ML bất đồng luật**. Hệ thống tự chạy và hiện hai điểm ML, ML + luật. Mở **Vì sao điểm tăng?** để xem lời giải thích, rồi mở **Chi tiết kỹ thuật** để chỉ điểm luật, công thức, fact và ID luật.
 
 | Tình huống | Cách xử lý ngay tại buổi bảo vệ |
 |---|---|
