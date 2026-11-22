@@ -1,6 +1,6 @@
 # Sổ tay bảo vệ · Medical Expert System
 
-**Nếu chỉ còn 5 phút để ôn**, hãy đọc [ca 5 tính tay](#ca5), [hai bảng kết quả](#ketqua) và [kịch bản cầm máy](#demo). Khi thầy cô hỏi sâu, đi theo thứ tự **đầu vào nào → đoạn nào xử lý → con số nào chứng minh → kết luận được đến đâu**.
+**Nếu chỉ còn 5 phút để ôn**, hãy đọc [ca 5 tính tay](#ca5), [hai bảng kết quả](#ketqua) và [kịch bản cầm máy](#demo). Khi thầy cô hỏi sâu, đi theo thứ tự **đầu vào nào → đoạn nào xử lý → con số nào chứng minh → kết luận được đến đâu**. Xem thêm [bộ câu hỏi vấn đáp và chiến lược luyện tập](VAN_DAP_BAO_VE.md).
 
 <a id="ca5"></a>
 
@@ -10,7 +10,7 @@
 
 > “Em muốn trả lời một câu hỏi cụ thể. Nếu một mô hình học từ dữ liệu cho điểm thấp, nhưng một luật viết rõ ràng lại khớp, hệ thống sẽ kết luận thế nào? Em xin chạy một ca để thấy hai nguồn điểm, rồi dùng kết quả trên dữ liệu có nhãn để xem việc thêm luật giúp ở đâu và sai thêm ở đâu.”
 
-Trong **Suy luận**, bấm **05 · ML ≠ Luật**. Đây là ca tự tạo trên form Pima với tuổi 45, BMI 26 và glucose hai giờ OGTT bằng 90. Hãy chỉ vào từng dòng khi nói.
+Trong **Suy luận**, bấm **Đổi ca** rồi chọn **Ca 5 · ML ≠ Luật**. Đây là ca tự tạo trên form Pima với tuổi 45, BMI 26 và glucose hai giờ OGTT bằng 90. Hãy chỉ vào từng dòng khi nói.
 
 | Câu hỏi trước màn hình | Cách trả lời bằng chính ca đang mở |
 |---|---|
@@ -129,7 +129,7 @@ Trên màn hình, **14,3%** là điểm cho một ca, **F1** là metric trên nh
 | **Độ lệch chuẩn CV có cho biết độ chắc chắn của một ca? Sao không hạ ngưỡng cho Pima?** | Độ lệch chuẩn mô tả biến động metric giữa 5 fold train. Ngưỡng 0,5 là quy ước cố định trước T10. Nếu nghiên cứu ngưỡng khác, phải chọn bằng dữ liệu phát triển và đánh giá lại theo giao thức mới. |
 | **Đồ án đóng góp gì khi thuật toán đã có?** | Phần có thể chứng minh là triển khai NumPy, quy trình so sánh dùng chung ID, cách tách nguồn điểm trong trace và đối chứng định lượng. Ví dụ em chỉ ra được cả mức giảm bỏ sót lẫn mức tăng báo sai khi thêm luật, và trường hợp đổi công thức chỉ đổi điểm. |
 
-Nếu được yêu cầu chứng minh một lỗi cụ thể, mở báo cáo T12. Hai ca Cleveland trong bảng đã phân tích minh họa hai hướng: `cleveland:0013` từ âm giả thành dương đúng, còn `cleveland:0006` từ âm đúng thành dương giả. Đây là phân tích sau đánh giá. Sáu nút demo dùng ca tự tạo riêng. [Phân tích lỗi theo ID](T12_ERROR_ANALYSIS.md) · [Mã tính metric](../experiment_metrics.py)
+Nếu được yêu cầu chứng minh một lỗi cụ thể, mở báo cáo T12. Hai ca Cleveland trong bảng đã phân tích minh họa hai hướng: `cleveland:0013` từ âm giả thành dương đúng, còn `cleveland:0006` từ âm đúng thành dương giả. Đây là phân tích sau đánh giá. Sáu ca minh họa được tạo riêng. [Phân tích lỗi theo ID](T12_ERROR_ANALYSIS.md) · [Mã tính metric](../experiment_metrics.py)
 
 <a id="demo"></a>
 
@@ -144,20 +144,20 @@ MEDICAL_HISTORY_DB="$demo_db_dir/history.sqlite" \
   .venv/bin/python -B -m flask --app app run --host 127.0.0.1 --port 5000
 ```
 
-Mở [ứng dụng trên máy](http://127.0.0.1:5000). Trong giao diện hiện tại, bấm một nút **Kịch bản demo T13** sẽ tự nạp ca và gửi yêu cầu. Khi sửa tay, bấm **Chạy suy luận**. Khi cần chuyển số liệu thật nhanh, mở sẵn [bảng kết quả và giới hạn](REVIEW.md) ở cửa sổ thứ hai.
+Mở [ứng dụng trên máy](http://127.0.0.1:5000). Trong giao diện hiện tại, bấm **Đổi ca** rồi chọn một ca minh họa để tự nạp và gửi yêu cầu. Khi sửa tay, bấm **Chạy suy luận**. Khi cần chuyển số liệu thật nhanh, mở sẵn [bảng kết quả và giới hạn](REVIEW.md) ở cửa sổ thứ hai.
 
 | Thời gian | Tay làm | Miệng nói |
 |---|---|---|
 | 0:00–0:40 | Mở **Suy luận**, chỉ bốn nhóm và hai chế độ. | “Bốn nhóm có bốn mô hình riêng. Em dùng Cleveland và Pima để kiểm tra thêm xem luật tác động thế nào đến dự đoán.” |
-| 0:40–2:10 | Bấm **05 · ML ≠ Luật**, chỉ lần lượt ML, Hệ luật, điểm kết hợp. Mở **Giải thích chi tiết (Trace)**. | Kể lại ca 05 bằng 1/7 → 0,50 → 0,5714. Chỉ tuổi, BMI, ID luật. Dừng ở câu “em biết vì sao quyết định đổi, còn đúng hay sai cần nhãn thật”. |
-| 2:10–3:00 | Bấm **02 · Thiếu chol**. Chỉ ô trống, fact chưa biết và trạng thái luật. | “ML có trung vị để tính tiếp. Em giữ nguyên tình trạng thiếu ở nhánh luật, nên dòng cholesterol trống không sinh bằng chứng.” |
+| 0:40–2:10 | Chọn **Đổi ca → Ca 5 · ML ≠ Luật**, mở **Vì sao điểm tăng?** và **Chi tiết kỹ thuật**. | Kể lại ca 05 bằng 1/7 → 0,50 → 0,5714. Chỉ tuổi, BMI, ID luật. Dừng ở câu “em biết vì sao quyết định đổi, còn đúng hay sai cần nhãn thật”. |
+| 2:10–3:00 | Chọn **Đổi ca → Ca 2 · Thiếu cholesterol**. Chỉ ô trống, fact chưa biết và trạng thái luật. | “ML có trung vị để tính tiếp. Em giữ nguyên tình trạng thiếu ở nhánh luật, nên dòng cholesterol trống không sinh bằng chứng.” |
 | 3:00–4:00 | Mở **Mô hình CV**, chỉ mô hình được chọn và F1 ± std. | “Em giữ riêng khoảng 20%, dùng 5 fold trên phần còn lại để chọn mô hình. Bảng trên màn hình là điểm CV. Sau khi khóa phương pháp em mới đo trên phần để riêng.” |
 | 4:00–5:00 | Mở bảng FP/FN ở mục 6 hoặc trong REVIEW. Chỉ một hàng Pima. | “Thêm luật giúp tìm thêm 16 ca dương, đổi lại có thêm 12 ca báo dương sai. Số này cho biết cái giá của việc nâng điểm khi khớp luật.” |
-| 5:00–6:00 nếu còn giờ | Bấm **04 · 2 luật đích** nếu được hỏi về công thức, hoặc **Lịch sử** nếu được hỏi kết quả lưu ở đâu. | Với ca 04, tính 0,775 rồi 0,9357. Với lịch sử, chỉ cột **điểm ML** và giải thích vì sao khác điểm kết hợp. Kết lại bằng giới hạn của dữ liệu nhỏ, một holdout và điểm chưa hiệu chỉnh. |
+| 5:00–6:00 nếu còn giờ | Chọn **Đổi ca → Ca 4 · 2 luật đích** nếu được hỏi về công thức, hoặc **Lịch sử** nếu được hỏi kết quả lưu ở đâu. | Với ca 04, tính 0,775 rồi 0,9357. Với lịch sử, chỉ cột **điểm ML** và giải thích vì sao khác điểm kết hợp. Kết lại bằng giới hạn của dữ liệu nhỏ, một holdout và điểm chưa hiệu chỉnh. |
 
-**Bảng tra sáu nút.** Số làm tròn theo màn hình. Dấu “—” nghĩa là nhánh luật chưa có điểm.
+**Bảng tra sáu ca minh họa.** Số làm tròn theo màn hình. Dấu “—” nghĩa là nhánh luật chưa có điểm.
 
-| Nút | Dữ liệu nhập | ML / luật / gộp | Chỉ điều gì khi được hỏi? |
+| Ca | Dữ liệu nhập | ML / luật / gộp | Chỉ điều gì khi được hỏi? |
 |---|---|---|---|
 | 01 · Hợp lệ | Tim, tuổi 60, BP 135, chol 230 | 53,9% / 55,0% / 79,3% | Hai luật hiện trong trace, chỉ CLEV_TARGET_01 góp vào điểm. |
 | 02 · Thiếu chol | Tim, tuổi 60, BP 135, chol trống | 55,4% / — / 55,4% | Fact thiếu giữ trạng thái chưa biết. |
@@ -166,7 +166,7 @@ Mở [ứng dụng trên máy](http://127.0.0.1:5000). Trong giao diện hiện 
 | 05 · ML ≠ Luật | Pima, glucose 90, BMI 26, tuổi 45 | 14,3% / 50,0% / 57,1% | Một luật đủ đưa điểm cuối qua ngưỡng. |
 | 06 · Ngoài miền | Tim, tuổi 60, BP 135, chol 900 | HTTP 400 | Form báo lỗi cholesterol ngoài miền 150–400. SQLite chỉ ghi sau khi kiểm tra đầu vào thành công. |
 
-Đã kiểm tra lại sáu bộ đầu vào bằng Flask test client với artifact T06 và DB tạm. Năm ca hợp lệ trả 200, ca 06 trả 400, lịch sử có năm dòng. Ảnh chụp của lần chạy demo đã lưu có thể dùng để đối chiếu kết quả. [Kịch bản và ảnh sáu ca](T13_DEMO.md) · [Các nút demo trên giao diện](../static/workspace.js)
+Đã kiểm tra lại sáu bộ đầu vào bằng Flask test client với artifact T06 và DB tạm. Năm ca hợp lệ trả 200, ca 06 trả 400, lịch sử có năm dòng. Ảnh chụp của lần chạy demo đã lưu có thể dùng để đối chiếu kết quả. [Kịch bản và ảnh sáu ca](T13_DEMO.md) · [Ca minh họa trên giao diện](../static/workspace.js)
 
 **Các tình huống dễ khựng khi đang trình bày**
 
