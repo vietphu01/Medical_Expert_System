@@ -67,3 +67,7 @@ Commit `0f85450` cập nhật GUI, [bản review](REVIEW.md) và [sáu ca demo](
 Đã đối chiếu mã phương pháp và artifact theo khóa T10, cùng hai checksum CSV holdout đã công bố. Bước tiếp theo là luyện giải thích tác động lên FN/FP và rà soát miền nhập CKD trên train. Form nhận huyết áp từ 90 mmHg trong khi median train là 80 mmHg. Xem cách đếm và giới hạn trong [bản review](REVIEW.md).
 
 Commit `810a47f` bàn giao [báo cáo từ A đến Z](BAO_CAO_DU_AN.md) và liên kết từ README. Đã kiểm tra mục lục, liên kết tệp, bảng metric CV/OOF/holdout, hai ca Pima với artifact T06, khóa T10 và checksum hai CSV đã xuất. Lệnh `.venv/bin/python -B -m unittest discover -s tests -q` đạt 47/47, dùng SQLite tạm trong kiểm thử. Bản báo cáo có mục hướng dẫn vận hành và bốn câu tự kiểm tra để ôn bảo vệ.
+
+## Ghi chú bảo vệ ngày 22/11/2026
+
+Commit `947592c` bổ sung [sổ tay từ core đến demo](GHI_CHU_BAO_VE.md). Đã dùng `.venv/bin/python -B` với Flask test client, artifact T06 và SQLite tạm để gửi sáu ca T13. Năm lượt hợp lệ trả 200, ca ngoài miền trả 400, lịch sử có năm dòng. Bốn endpoint thống kê trả đúng mô hình đã chọn theo CV. Đã đối chiếu số liệu với metric tổng hợp, kiểm tra liên kết, bảng Markdown và chạy `git diff --cached --check` thành công. Bước tiếp theo khi luyện trình bày là tính ca 05 bằng tay và giải thích thay đổi FN/FP trên Pima.
