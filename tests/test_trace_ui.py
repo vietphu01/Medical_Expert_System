@@ -1,8 +1,11 @@
 """Exercise the same trace renderer that Flask serves, with invented facts."""
+import json
 import shutil
 import subprocess
 import unittest
 from pathlib import Path
+
+from research_rules import evaluate_rules
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -10,6 +13,36 @@ ROOT = Path(__file__).resolve().parents[1]
 
 @unittest.skipUnless(shutil.which('node'), 'node is not installed')
 class TraceUiTests(unittest.TestCase):
+    def test_waiting_rule_preview_agrees_with_backend_for_fixture_inputs(self):
+        cases = [
+            {'dataset': 'cleveland', 'inputs': {'age': 60, 'bp': 135, 'chol': 200}},
+            {'dataset': 'cleveland', 'inputs': {'age': 60, 'bp': 135, 'chol': 201}},
+            {'dataset': 'cleveland', 'inputs': {'age': 60, 'bp': 135, 'chol': None}},
+            {'dataset': 'cleveland', 'inputs': {'age': 50, 'bp': 135, 'chol': None}},
+            {'dataset': 'pima', 'inputs': {'age': 45, 'glucose': 90, 'bmi': 26}},
+            {'dataset': 'pima', 'inputs': {'age': 45, 'glucose': 175, 'bmi': 33}},
+            {'dataset': 'pima', 'inputs': {'age': 45, 'glucose': None, 'bmi': None}},
+            {'dataset': 'ilpd', 'inputs': {'age': 45, 'albumin': 4, 'bilirubin': 1}},
+        ]
+        harness = r"""
+const fs = require('node:fs');
+const vm = require('node:vm');
+const context = vm.createContext({document: {addEventListener() {}}});
+vm.runInContext(fs.readFileSync(process.argv[1], 'utf8'), context);
+const cases = JSON.parse(fs.readFileSync(0, 'utf8'));
+process.stdout.write(JSON.stringify(cases.map(item => context.previewTargetRules(item.dataset, item.inputs))));
+"""
+        output = subprocess.run(['node', '-e', harness, str(ROOT / 'static/workspace.js')],
+                                input=json.dumps(cases), check=True, capture_output=True, text=True)
+        previews = json.loads(output.stdout)
+        for case, preview in zip(cases, previews):
+            with self.subTest(case=case):
+                _, fired = evaluate_rules(case['dataset'], case['inputs'])
+                target_count = sum(rule['target'] == case['dataset'] for rule in fired)
+                self.assertEqual(preview['matched'], target_count)
+        self.assertTrue(previews[2]['pending'])
+        self.assertFalse(previews[3]['pending'])
+
     def test_trace_rendering_treats_text_as_text_and_shows_unknown(self):
         harness = r"""
 const assert = require('node:assert/strict');

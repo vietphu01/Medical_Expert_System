@@ -468,6 +468,98 @@ function findFactSpec(dataset, factKey) {
     return null;
 }
 
+// Preview the same target-rule conditions shown in research_rules.py; the API
+// remains the source of the actual inference result.
+const TARGET_RULE_CONDS = {
+    cleveland: [["age_at_least_55", "chol_elevated"]],
+    pima: [["age_35_to_70", "bmi_elevated"], ["age_35_to_70", "bmi_higher"]],
+};
+const SHORT_MODEL_NAMES = {
+    "Gaussian Naive Bayes": "Gaussian NB",
+    "K-Nearest Neighbors": "KNN (k=7)",
+    "Logistic Regression": "Logistic Reg.",
+    "Decision Tree (ID3)": "Decision Tree",
+    "Ensemble Voting": "Ensemble",
+};
+
+function previewTargetRules(dataset, values) {
+    const facts = {};
+    for (const [feature, specs] of Object.entries(DATASET_FACT_SPECS[dataset] || {})) {
+        for (const spec of specs) {
+            const value = values[feature];
+            if (value == null || !Number.isFinite(value)) {
+                facts[spec.key] = null;
+            } else if (spec.kind === "at_least") {
+                facts[spec.key] = value >= spec.bounds;
+            } else if (spec.kind === "between") {
+                facts[spec.key] = value >= spec.bounds[0] && value <= spec.bounds[1];
+            } else {
+                const [low, high] = spec.bounds;
+                facts[spec.key] = Math.min(1, Math.max(0, (value - low) / (high - low))) > 0.5;
+            }
+        }
+    }
+    const outcomes = (TARGET_RULE_CONDS[dataset] || []).map(conditions => {
+        if (conditions.some(key => facts[key] === false)) return false;
+        return conditions.some(key => facts[key] == null) ? null : true;
+    });
+    return {matched: outcomes.filter(value => value === true).length, pending: outcomes.some(value => value === null)};
+}
+
+function updateWaitingPlaceholder() {
+    const disease = diseases[currentDisease];
+    const form = byId("diagnosisForm");
+    if (!disease || !form?.elements) return;
+    const values = {};
+    const chips = byId("waitInputChips");
+    chips?.replaceChildren();
+    let filled = 0;
+    let invalid = false;
+
+    for (const field of disease.fields) {
+        const el = form.elements.namedItem("inputs." + field.key);
+        if (!el) continue;
+        const raw = el.value;
+        const missing = raw === "" && !el.validity?.badInput;
+        const number = missing ? null : Number(raw);
+        const bad = !missing && (el.validity?.badInput || !Number.isFinite(number) ||
+            number < field.min || number > field.max || (field.key === "age" && !Number.isInteger(number)));
+        invalid ||= Boolean(bad);
+        values[field.key] = missing || bad ? null : number;
+        if (!missing && !bad) filled++;
+        const label = missing ? "Chưa biết" : bad ? "Không hợp lệ" : numberFormat.format(number);
+        chips?.append(make("span", field.key + ": " + label, "bp-chip" + (missing ? " is-missing" : "")));
+    }
+
+    byId("waitNodeInputs").textContent = filled + "/" + disease.fields.length + " chỉ số";
+    const nodeRules = byId("waitNodeRules");
+    const preview = byId("waitRulePreview");
+    let matched = 0;
+    if (invalid) {
+        nodeRules.textContent = "Chưa sẵn sàng";
+        preview.textContent = "Kiểm tra chỉ số đầu vào";
+    } else if (!disease.has_target_rules) {
+        nodeRules.textContent = "Chưa có luật đích";
+        preview.textContent = "Chỉ chạy ML · chưa có luật đích";
+    } else {
+        const state = previewTargetRules(disease.dataset, values);
+        matched = state.matched;
+        nodeRules.textContent = !matched && state.pending ? "Chờ dữ kiện" : matched + " luật dự khớp";
+        preview.textContent = matched ? "Dự kiến " + matched + " luật đích khớp" :
+            state.pending ? "Thiếu dữ kiện để xét luật" : "Chưa đạt tiền đề luật đích";
+    }
+    preview.classList.toggle("is-match", matched > 0);
+}
+
+function replayWaitingPulse() {
+    if (prefersReducedMotion()) return;
+    for (const el of byId("emptyState")?.querySelectorAll?.(".flow-pulse, .bp-arc-sweep, .bp-shimmer") || []) {
+        el.style.animation = "none";
+        void el.getBoundingClientRect();
+        el.style.animation = "";
+    }
+}
+
 function syncSliderVars(slider, val) {
     const min = Number(slider.min || 0);
     const max = Number(slider.max || 100);
@@ -599,6 +691,7 @@ function fillFormInputs(values) {
             }
         }
     }
+    updateWaitingPlaceholder();
 }
 
 /* ===== Disease Selection, Live What-If & Form Rendering ===== */
@@ -633,7 +726,10 @@ function selectDisease(key, {transition = true} = {}) {
         const techDetails = byId("techDetails");
         if (techDetails) techDetails.open = false;
         renderForm(disease);
+        byId("emptyState").querySelector(".flow")?.classList.toggle("ml-only", !disease.has_target_rules);
+        updateWaitingPlaceholder();
         clearResult();
+        replayWaitingPulse();
         loadModelStats(key, selection);
     };
 
@@ -660,6 +756,13 @@ async function start() {
 
     byId("staleRerunBtn")?.addEventListener("click", () => {
         byId("diagnosisForm")?.requestSubmit?.();
+    });
+    byId("waitRunBtn")?.addEventListener("click", () => {
+        byId("diagnosisForm")?.requestSubmit?.();
+    });
+    byId("waitDemoBtn")?.addEventListener("click", () => {
+        const preset = DEMO_PRESETS.find(item => item.id === "c5");
+        if (preset) applyPreset(preset);
     });
 
     byId("liveAutoToggle")?.addEventListener("click", event => {
@@ -860,6 +963,10 @@ function validateSingleField(input, field, dataset, {announce = false} = {}) {
 
 function renderForm(disease) {
     const form = byId("diagnosisForm");
+    clearTimeout(errorAnnounceTimer);
+    announcedErrorField = null;
+    const announcer = byId("formErrorAnnouncer");
+    if (announcer) announcer.textContent = "";
     form.inert = false;
     form.replaceChildren();
 
@@ -923,6 +1030,7 @@ function renderForm(disease) {
             clearFormErrorList();
             updatePresetHighlight(null);
             markResultStale();
+            updateWaitingPlaceholder();
             scheduleLiveDiagnosis();
         });
 
@@ -951,6 +1059,7 @@ function renderForm(disease) {
                     validateSingleField(input, field, disease.dataset, {announce: false});
                 }
             }
+            updateWaitingPlaceholder();
         });
 
         input.addEventListener("blur", () => {
@@ -981,6 +1090,7 @@ function renderForm(disease) {
                 slider.setAttribute("aria-valuetext", numberFormat.format(Number(restored)));
                 input.focus();
             }
+            updateWaitingPlaceholder();
             scheduleLiveDiagnosis();
         });
 
@@ -1773,6 +1883,7 @@ async function loadModelStats(key, version) {
     byId("treeSection").open = false;
     status.textContent = "Đang tải mô hình…";
     if (brief) brief.textContent = "Đang tải…";
+    byId("waitNodeModel").textContent = "Đang tải…";
 
     try {
         const data = await fetchJson("/api/model_stats/" + key);
@@ -1789,6 +1900,7 @@ async function loadModelStats(key, version) {
         if (brief) {
             brief.textContent = data.selected_model_name + (chosen?.f1 != null ? (" · F1 " + numberFormat.format(chosen.f1) + "%") : "");
         }
+        byId("waitNodeModel").textContent = SHORT_MODEL_NAMES[data.selected_model_name] || data.selected_model_name;
         if (badge) {
             badge.textContent = String(data.stats.length);
             badge.hidden = false;
@@ -1845,6 +1957,7 @@ async function loadModelStats(key, version) {
             currentModelData = null;
             status.textContent = error.fields?.model || "Chưa tải được thông tin mô hình.";
             if (brief) brief.textContent = "Chưa có artifact mô hình";
+            byId("waitNodeModel").textContent = "Chưa có mô hình";
         }
     }
 }

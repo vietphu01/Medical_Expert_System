@@ -162,7 +162,95 @@
                 </header>
 
                 <div id="emptyState" class="waiting">
-                    <p class="waiting-message">Chạy suy luận để xem kết quả</p>
+                    <div class="waiting-top">
+                        <span class="waiting-status">
+                            <span class="waiting-dot" aria-hidden="true"></span>
+                            <span>Sẵn sàng suy luận</span>
+                        </span>
+                        <span class="waiting-meta-pill" id="waitRulePreview">Đang chuẩn bị dữ kiện…</span>
+                    </div>
+
+                    <figure class="waiting-figure" aria-hidden="true">
+                        <div class="flow">
+                            <svg class="waiting-svg" viewBox="0 0 468 140" width="468" height="140" fill="none">
+                                <defs>
+                                    <linearGradient id="waitFinalGrad" x1="0" y1="0" x2="1" y2="1">
+                                        <stop offset="0%" stop-color="var(--brand)"/>
+                                        <stop offset="100%" stop-color="var(--brand-hover)"/>
+                                    </linearGradient>
+                                </defs>
+                                <path class="flow-wire" d="M 102 70 C 138 70, 138 35, 170 35"/>
+                                <path class="flow-wire flow-wire-rule" d="M 102 70 C 138 70, 138 105, 170 105"/>
+                                <path class="flow-wire" d="M 304 35 C 334 35, 334 70, 362 70"/>
+                                <path class="flow-wire flow-wire-rule" d="M 304 105 C 334 105, 334 70, 362 70"/>
+
+                                <path class="flow-pulse" d="M 102 70 C 138 70, 138 35, 170 35"/>
+                                <path class="flow-pulse flow-pulse-rule" d="M 102 70 C 138 70, 138 105, 170 105"/>
+                                <path class="flow-pulse flow-pulse-out" d="M 304 35 C 334 35, 334 70, 362 70"/>
+                                <path class="flow-pulse flow-pulse-rule flow-pulse-out" d="M 304 105 C 334 105, 334 70, 362 70"/>
+
+                                <g class="flow-node">
+                                    <rect x="6" y="45" width="96" height="50" rx="12"/>
+                                    <text class="flow-title" x="54" y="66" text-anchor="middle">Đầu vào</text>
+                                    <text class="flow-sub" id="waitNodeInputs" x="54" y="83" text-anchor="middle">3/3 chỉ số</text>
+                                </g>
+                                <g class="flow-node">
+                                    <rect x="170" y="10" width="134" height="50" rx="12"/>
+                                    <text class="flow-title" x="237" y="31" text-anchor="middle">Mô hình ML</text>
+                                    <text class="flow-sub" id="waitNodeModel" x="237" y="48" text-anchor="middle">Đang tải…</text>
+                                </g>
+                                <g class="flow-node flow-node-rule">
+                                    <rect x="170" y="80" width="134" height="50" rx="12"/>
+                                    <text class="flow-title" x="237" y="101" text-anchor="middle">Hệ luật mờ</text>
+                                    <text class="flow-sub" id="waitNodeRules" x="237" y="118" text-anchor="middle">Luật đích</text>
+                                </g>
+                                <g class="flow-node flow-node-final">
+                                    <rect x="362" y="45" width="100" height="50" rx="12"/>
+                                    <text class="flow-title" x="412" y="66" text-anchor="middle">Hỗ trợ</text>
+                                    <text class="flow-sub" x="412" y="83" text-anchor="middle">--,--%</text>
+                                </g>
+                            </svg>
+                        </div>
+                    </figure>
+
+                    <div class="waiting-blueprint" aria-hidden="true">
+                        <div class="blueprint-gauge-card">
+                            <svg class="blueprint-gauge-svg" viewBox="0 0 164 98" width="164" height="98" fill="none">
+                                <path class="bp-arc-track" d="M 20 82 A 62 62 0 0 1 144 82"/>
+                                <path class="bp-arc-sweep" d="M 20 82 A 62 62 0 0 1 144 82"/>
+                                <line class="bp-cut" x1="82" y1="11" x2="82" y2="29"/>
+                                <text class="bp-axis" x="82" y="8" text-anchor="middle">50%</text>
+                                <text class="bp-axis" x="16" y="95">0%</text>
+                                <text class="bp-axis" x="148" y="95" text-anchor="end">100%</text>
+                                <text class="bp-score" x="82" y="72" text-anchor="middle">--,--%</text>
+                            </svg>
+                            <span class="bp-caption">Đồng hồ ngưỡng quyết định</span>
+                        </div>
+
+                        <div class="blueprint-tracks-card">
+                            <span class="bp-mini-title">Bản xem trước bố cục kết quả</span>
+                            <div class="bp-bars">
+                                <div class="bp-bar-row"><span>ML</span><div class="bp-rail"><i class="bp-shimmer" style="--w: 58%; --d: 0ms"></i></div></div>
+                                <div class="bp-bar-row"><span>Luật</span><div class="bp-rail"><i class="bp-shimmer is-rule" style="--w: 50%; --d: 140ms"></i></div></div>
+                                <div class="bp-bar-row"><span>Gộp</span><div class="bp-rail"><i class="bp-shimmer is-comb" style="--w: 74%; --d: 280ms"></i></div></div>
+                            </div>
+                            <div class="bp-staged">
+                                <span class="bp-mini-title">Chỉ số đang chuẩn bị gửi</span>
+                                <div id="waitInputChips" class="bp-chips"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="waiting-footer">
+                        <div class="waiting-copy">
+                            <h3>Chạy suy luận để xem kết quả</h3>
+                            <p>Đồng hồ và các thanh trên chỉ minh họa bố cục, chưa phải điểm dự đoán.</p>
+                        </div>
+                        <div class="waiting-actions">
+                            <button type="button" class="wait-primary-btn" id="waitRunBtn">Chạy ngay →</button>
+                            <button type="button" class="ghost-btn" id="waitDemoBtn">Thử Ca 5 (ML ≠ Luật)</button>
+                        </div>
+                    </div>
                 </div>
 
                 <p id="loading" class="loading-bar" role="status" hidden>
