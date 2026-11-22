@@ -81,3 +81,9 @@ Commit `4400e40` bổ sung [37 câu hỏi vấn đáp và kế hoạch luyện t
 Commit `3dd065b` hoàn thiện thay đổi giao diện đang làm dở: danh sách ca và chú thích mở theo yêu cầu; kết quả chính hiện điểm ML và điểm kết hợp; lời giải thích ngắn và chi tiết kỹ thuật mở riêng. Lỗi nhập hiện dưới ô, kết quả cũ có cảnh báo và phản hồi đến muộn không ghi đè đầu vào mới. Lời giải thích cũng không khẳng định điểm tăng nếu ML đã là 100%. [Kịch bản demo](T13_DEMO.md) · [Kiểm thử giao diện](../tests/test_trace_ui.py)
 
 Đã đọc diff, `git diff --cached --check` và `node --check static/workspace.js` pass; `PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m unittest discover -s tests -q` pass 48/48. Trình duyệt chạy năm ca hợp lệ, ca ngoài miền và bốn nhóm trên Flask với artifact T06 và SQLite tạm; ca 5 hiện 14,3% → 57,1%, ca ngoài miền không ghi lịch sử. Đã kiểm tra chú thích, trace, cảnh báo kết quả cũ và chiều rộng 390 px, cùng liên kết trong ba tài liệu demo. Không chạy lại đánh giá holdout. Bước tiếp theo là luyện demo theo kịch bản mới.
+
+## Khôi phục khung chờ ngày 22/11/2026
+
+Commit `b685e0e` đưa trở lại khung chờ theo video: sơ đồ đầu vào → ML/hệ luật → hỗ trợ, hiệu ứng, đồng hồ và các thanh xem trước, cùng nút chạy nhanh. Đồng hồ và thanh được ghi rõ là minh họa; sau khi chạy vẫn hiện kết quả thực và các phần giải thích thu gọn. Trạng thái luật trước khi chạy chỉ là dự kiến từ điều kiện tương ứng trong giao diện, kết quả chính thức vẫn do API trả về.
+
+Đã đọc diff; `git diff --cached --check`, `node --check static/workspace.js` và `PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m unittest discover -s tests -q` pass, tổng 49/49 test. Test mới đối chiếu luật dự kiến với backend trên fixture tự tạo, gồm biên và dữ kiện thiếu. Kiểm tra trình duyệt với SQLite tạm: đổi đầu vào, thiếu/ngoài miền, ca 5 (14,3% → 57,1%), nhánh chỉ ML và chiều rộng 390 px. Không chạy lại đánh giá holdout. Bước tiếp theo là tải lại giao diện đang dùng để xem khung mới.
