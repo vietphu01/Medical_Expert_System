@@ -1,6 +1,6 @@
 # Trạng thái Medical Expert System
 
-Cập nhật ngày **18/11/2026**.
+Cập nhật ngày **22/11/2026**.
 
 [Báo cáo tiến độ Tuần 1](BAO_CAO_TIEN_DO_TUAN_1.md) tóm tắt kết quả T01–T05, lần rà soát cuối tuần và mốc T06.
 
@@ -75,3 +75,9 @@ Commit `947592c` bổ sung [sổ tay từ core đến demo](GHI_CHU_BAO_VE.md). 
 ## Luyện vấn đáp và chiến lược bảo vệ ngày 22/11/2026
 
 Commit `4400e40` bổ sung [37 câu hỏi vấn đáp và kế hoạch luyện tập](VAN_DAP_BAO_VE.md), đồng thời cập nhật thao tác chọn ca trong [sổ tay bảo vệ](GHI_CHU_BAO_VE.md). Đã đối chiếu metric tổng hợp và phép tính ca 4, kiểm tra 17 hash phương pháp và hash mô hình với khóa T10, kiểm tra liên kết và bảng Markdown. `node --check static/workspace.js` pass. `MEDICAL_HISTORY_DB=DB_TẠM .venv/bin/python -B -m unittest discover -s tests -q` pass 47/47. Trên trình duyệt, ca 5 chạy qua Flask với DB tạm và hiện 14,3% ML, 50,0% luật, 57,1% kết hợp cùng trace. Giao diện và các file ngoài tài liệu có thay đổi sẵn trong workspace. Bước tiếp theo là luyện trả lời và đối chiếu với tiêu chí chấm của giảng viên khi có.
+
+## Tinh gọn màn hình suy luận ngày 22/11/2026
+
+Commit `3dd065b` hoàn thiện thay đổi giao diện đang làm dở: danh sách ca và chú thích mở theo yêu cầu; kết quả chính hiện điểm ML và điểm kết hợp; lời giải thích ngắn và chi tiết kỹ thuật mở riêng. Lỗi nhập hiện dưới ô, kết quả cũ có cảnh báo và phản hồi đến muộn không ghi đè đầu vào mới. [Kịch bản demo](T13_DEMO.md) · [Kiểm thử giao diện](../tests/test_trace_ui.py)
+
+Đã đọc diff, `git diff --cached --check` và `node --check static/workspace.js` pass; `PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m unittest discover -s tests -q` pass 48/48. Trình duyệt chạy năm ca hợp lệ, ca ngoài miền và bốn nhóm trên Flask với artifact T06 và SQLite tạm; ca 5 hiện 14,3% → 57,1%, ca ngoài miền không ghi lịch sử. Đã kiểm tra chú thích, trace, cảnh báo kết quả cũ và chiều rộng 390 px, cùng liên kết trong ba tài liệu demo. Không chạy lại đánh giá holdout. Bước tiếp theo là luyện demo theo kịch bản mới.
