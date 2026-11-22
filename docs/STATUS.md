@@ -71,3 +71,7 @@ Commit `810a47f` bàn giao [báo cáo từ A đến Z](BAO_CAO_DU_AN.md) và li�
 ## Ghi chú bảo vệ ngày 22/11/2026
 
 Commit `947592c` bổ sung [sổ tay từ core đến demo](GHI_CHU_BAO_VE.md). Đã dùng `.venv/bin/python -B` với Flask test client, artifact T06 và SQLite tạm để gửi sáu ca T13. Năm lượt hợp lệ trả 200, ca ngoài miền trả 400, lịch sử có năm dòng. Bốn endpoint thống kê trả đúng mô hình đã chọn theo CV. Đã đối chiếu số liệu với metric tổng hợp, kiểm tra liên kết, bảng Markdown và chạy `git diff --cached --check` thành công. Bước tiếp theo khi luyện trình bày là tính ca 05 bằng tay và giải thích thay đổi FN/FP trên Pima.
+
+## Luyện vấn đáp và chiến lược bảo vệ ngày 22/11/2026
+
+Commit `4400e40` bổ sung [37 câu hỏi vấn đáp và kế hoạch luyện tập](VAN_DAP_BAO_VE.md), đồng thời cập nhật thao tác chọn ca trong [sổ tay bảo vệ](GHI_CHU_BAO_VE.md). Đã đối chiếu metric tổng hợp và phép tính ca 4, kiểm tra 17 hash phương pháp và hash mô hình với khóa T10, kiểm tra liên kết và bảng Markdown. `node --check static/workspace.js` pass. `MEDICAL_HISTORY_DB=DB_TẠM .venv/bin/python -B -m unittest discover -s tests -q` pass 47/47. Trên trình duyệt, ca 5 chạy qua Flask với DB tạm và hiện 14,3% ML, 50,0% luật, 57,1% kết hợp cùng trace. Giao diện và các file ngoài tài liệu có thay đổi sẵn trong workspace. Bước tiếp theo là luyện trả lời và đối chiếu với tiêu chí chấm của giảng viên khi có.
