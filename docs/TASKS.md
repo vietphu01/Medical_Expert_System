@@ -37,3 +37,4 @@
 - [x] Chuẩn bị [bộ câu hỏi vấn đáp khó và chiến lược bảo vệ](VAN_DAP_BAO_VE.md), cập nhật thao tác demo theo giao diện hiện có.
 - [x] Tinh gọn màn hình suy luận: chọn ca theo nhu cầu, hiện hai điểm và lời giải thích theo từng mức, báo lỗi tại ô nhập và cảnh báo kết quả cũ. [Bằng chứng kiểm tra](STATUS.md)
 - [x] Khôi phục khung chờ suy luận theo video: sơ đồ chuyển động, bản xem trước đồng hồ và các thanh, trạng thái đầu vào và nút chạy; phân biệt rõ phần minh họa với kết quả thực. [Bằng chứng kiểm tra](STATUS.md)
+- [x] Khôi phục khung kết quả sinh động sau suy luận: đồng hồ, thanh so sánh và sơ đồ dùng điểm thực; trường hợp không có luật đích được ghi rõ. [Bằng chứng kiểm tra](STATUS.md)

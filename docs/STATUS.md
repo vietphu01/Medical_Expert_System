@@ -1,6 +1,6 @@
 # Trạng thái Medical Expert System
 
-Cập nhật ngày **22/11/2026**.
+Cập nhật ngày **23/11/2026**.
 
 [Báo cáo tiến độ Tuần 1](BAO_CAO_TIEN_DO_TUAN_1.md) tóm tắt kết quả T01–T05, lần rà soát cuối tuần và mốc T06.
 
@@ -87,3 +87,9 @@ Commit `3dd065b` hoàn thiện thay đổi giao diện đang làm dở: danh sá
 Commit `b685e0e` đưa trở lại khung chờ theo video: sơ đồ đầu vào → ML/hệ luật → hỗ trợ, hiệu ứng, đồng hồ và các thanh xem trước, cùng nút chạy nhanh. Đồng hồ và thanh được ghi rõ là minh họa; sau khi chạy vẫn hiện kết quả thực và các phần giải thích thu gọn. Trạng thái luật trước khi chạy chỉ là dự kiến từ điều kiện tương ứng trong giao diện, kết quả chính thức vẫn do API trả về.
 
 Đã đọc diff; `git diff --cached --check`, `node --check static/workspace.js` và `PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m unittest discover -s tests -q` pass, tổng 49/49 test. Test mới đối chiếu luật dự kiến với backend trên fixture tự tạo, gồm biên và dữ kiện thiếu. Kiểm tra trình duyệt với SQLite tạm: đổi đầu vào, thiếu/ngoài miền, ca 5 (14,3% → 57,1%), nhánh chỉ ML và chiều rộng 390 px. Không chạy lại đánh giá holdout. Bước tiếp theo là tải lại giao diện đang dùng để xem khung mới.
+
+## Khôi phục kết quả sinh động sau suy luận
+
+Commit `47193d5` bổ sung lại đồng hồ động, thanh so sánh và sơ đồ ML–luật sau khi có kết quả, dùng đúng các điểm trong trace. Khi không có luật đích khớp, giao diện hiển thị không có điểm luật; với bộ chỉ dùng ML, biểu đồ chỉ hiện điểm ML. Công thức và mã luật vẫn nằm trong **Chi tiết kỹ thuật**. Các số hiển thị ngay theo kết quả, còn kim và thanh có hiệu ứng chuyển động.
+
+Ngày 22/11 đã kiểm tra trình duyệt với SQLite tạm: ca 5 cho 14,3% ML, 50,0% luật và 57,1% kết hợp; ca thiếu dữ kiện, nhánh chỉ ML, cảnh báo kết quả cũ và chiều rộng 390 px hoạt động. Ngày 23/11, `PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m unittest discover -s tests -q` pass 50/50, `node --check static/workspace.js` và `git diff --cached --check` pass; liên kết trong các tài liệu liên quan hợp lệ. Đã review diff, không chạy lại đánh giá holdout. Bước tiếp theo là tải lại ứng dụng và luyện trình bày ca 5.
