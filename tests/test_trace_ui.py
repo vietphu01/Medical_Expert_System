@@ -43,6 +43,67 @@ process.stdout.write(JSON.stringify(cases.map(item => context.previewTargetRules
         self.assertTrue(previews[2]['pending'])
         self.assertFalse(previews[3]['pending'])
 
+    def test_result_visuals_use_trace_scores_and_handle_missing_rules(self):
+        harness = r"""
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const nodes = {};
+function element(tag) {
+    return {tag, children: [], textContent: '', className: '', attrs: {},
+        style: {vars: {}, setProperty(key, value) { this.vars[key] = value; }},
+        append(...items) { this.children.push(...items); },
+        replaceChildren(...items) { this.children = items; },
+        setAttribute(key, value) { this.attrs[key] = value; }
+    };
+}
+function contents(el) {
+    if (typeof el === 'string') return el;
+    return [el.textContent, ...el.children.map(contents)].join(' ');
+}
+function find(el, predicate) {
+    if (typeof el === 'string') return undefined;
+    return predicate(el) ? el : el.children.map(child => find(child, predicate)).find(Boolean);
+}
+const document = {
+    getElementById(id) { return nodes[id] ||= element('div'); },
+    createElement: element,
+    createElementNS(_, tag) { return element(tag); },
+    addEventListener() {},
+};
+const context = vm.createContext({document});
+vm.runInContext(fs.readFileSync(process.argv[1], 'utf8'), context);
+const trace = {target:'pima', ml:{model:'KNN', score:1/7},
+ facts:[{feature:'age', value:45, unit:'years', key:null}],
+ fired_rules:[{id:'fixture', conditions:[], conclusion:'minh họa', cf:.5, used_in_fusion:true}],
+ result:{rule_status:'matched', rule_score:.5, combined_score:4/7, predicted_label:1}};
+const disease = {has_target_rules:true, fields:[{key:'age', label:'Tuổi'}]};
+context.renderTrace(trace, disease);
+const strip = find(nodes.traceResult, el => el.className === 'compare-strip');
+assert.match(contents(strip), /14,3%.*50,0%.*57,1%/);
+const needle = find(nodes.traceResult, el => el.attrs.class === 'gauge-needle');
+assert.equal(needle.style.vars['--needle-deg'], '12.9deg');
+assert.match(contents(nodes.livePipeline), /14,3%.*50,0%.*57,1%/);
+assert.doesNotMatch(contents(nodes.livePipeline), /C_new/);
+assert.match(contents(nodes.fusionDetails), /C_new/);
+
+trace.fired_rules = [];
+trace.result.rule_score = null;
+trace.result.combined_score = trace.ml.score;
+trace.result.predicted_label = 0;
+context.renderTrace(trace, disease);
+assert.match(contents(nodes.traceResult), /Không có luật đích khớp/);
+assert.match(contents(nodes.livePipeline), /Chưa có điểm/);
+
+disease.has_target_rules = false;
+context.renderTrace(trace, disease);
+const onlyMl = find(nodes.traceResult, el => el.className === 'compare-strip');
+assert.match(contents(onlyMl), /Bộ dữ liệu chưa có luật đích/);
+assert.doesNotMatch(contents(onlyMl), /Kết hợp/);
+"""
+        subprocess.run(['node', '-e', harness, str(ROOT / 'static/workspace.js')],
+                       check=True, capture_output=True, text=True)
+
     def test_trace_rendering_treats_text_as_text_and_shows_unknown(self):
         harness = r"""
 const assert = require('node:assert/strict');

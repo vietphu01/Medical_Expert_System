@@ -1223,13 +1223,100 @@ async function runDiagnosis(event, {preserveFocus = false} = {}) {
 }
 
 /* ===== Comparison, Pipeline & Fuzzy Curve ===== */
-function buildCompareStrip(mlScore, ruleScore, combinedScore) {
+function buildSupportGauge(combined, mlScore, ruleScore, hasTargetRules) {
+    const svg = makeSvg("svg", {viewBox: "0 0 180 114", class: "gauge-svg", "aria-hidden": "true"});
+    if (!svg) return null;
+    const cx = 90, cy = 94, r = 68;
+    const clamp = v => Math.min(1, Math.max(0, v));
+    const pt = frac => {
+        const ang = Math.PI * (1 - clamp(frac));
+        return [cx + r * Math.cos(ang), cy - r * Math.sin(ang)];
+    };
+    const arcLen = Math.PI * r;
+    const clampedCombined = clamp(combined);
+
+    const bgPath = makeSvg("path", {
+        d: `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`,
+        fill: "none", stroke: "var(--surface-3)", "stroke-width": 13, "stroke-linecap": "round",
+    });
+    const fgPath = makeSvg("path", {
+        d: `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`,
+        fill: "none", stroke: "var(--tone-accent)", "stroke-width": 13, "stroke-linecap": "round",
+        class: "gauge-arc-fg",
+    });
+    fgPath.style?.setProperty?.("--arc-total", arcLen.toFixed(1));
+    fgPath.style?.setProperty?.("--arc-offset", (arcLen * (1 - clampedCombined)).toFixed(1));
+
+    // 50% threshold tick at top center
+    const tick = makeSvg("line", {
+        x1: cx, y1: cy - r - 11, x2: cx, y2: cy - r + 11,
+        stroke: "var(--ink)", "stroke-width": 2, "stroke-dasharray": "3 2", opacity: 0.72,
+    });
+    const tickLabel = makeSvg("text", {
+        x: cx, y: 11, "text-anchor": "middle", fill: "var(--muted)", "font-size": 10, "font-family": "var(--font-mono)",
+    });
+    tickLabel.textContent = "50%";
+    const leftLabel = makeSvg("text", {x: 16, y: 110, fill: "var(--muted)", "font-size": 9.5, "font-family": "var(--font-mono)"});
+    leftLabel.textContent = "0%";
+    const rightLabel = makeSvg("text", {x: 164, y: 110, "text-anchor": "end", fill: "var(--muted)", "font-size": 9.5, "font-family": "var(--font-mono)"});
+    rightLabel.textContent = "100%";
+
+    // Animated pointer needle sweeping to combined_score
+    const needleGroup = makeSvg("g", {class: "gauge-needle"});
+    const deg = -90 + clampedCombined * 180;
+    needleGroup.style?.setProperty?.("--needle-deg", deg.toFixed(1) + "deg");
+    needleGroup.append(
+        makeSvg("line", {x1: cx, y1: cy, x2: cx, y2: cy - r + 14, stroke: "var(--tone-accent)", "stroke-width": 2.4, "stroke-linecap": "round"}),
+        makeSvg("circle", {cx, cy, r: 4.5, fill: "var(--tone-accent)", stroke: "var(--surface)", "stroke-width": 2})
+    );
+
+    svg.append(bgPath, fgPath, tick, tickLabel, leftLabel, rightLabel, needleGroup);
+
+    // Marker pins for ML and Rule with spring pop-in
+    const [mx, my] = pt(mlScore);
+    const mlPin = makeSvg("circle", {cx: mx.toFixed(1), cy: my.toFixed(1), r: 4.8, fill: "var(--brand)", stroke: "var(--surface)", "stroke-width": 2, class: "gauge-pin"});
+    mlPin.style?.setProperty?.("--delay", "240ms");
+    const mlTitle = makeSvg("title");
+    mlTitle.textContent = "ML: " + scoreFormat.format(mlScore);
+    mlPin.append(mlTitle);
+    svg.append(mlPin);
+
+    if (ruleScore !== null) {
+        const [rx, ry] = pt(ruleScore);
+        const ripple = makeSvg("circle", {cx: rx.toFixed(1), cy: ry.toFixed(1), r: 5, fill: "none", stroke: "var(--conflict-accent)", "stroke-width": 1.6, class: "gauge-pin-pulse"});
+        const rulePin = makeSvg("circle", {cx: rx.toFixed(1), cy: ry.toFixed(1), r: 4.8, fill: "var(--conflict-accent)", stroke: "var(--surface)", "stroke-width": 2, class: "gauge-pin"});
+        rulePin.style?.setProperty?.("--delay", "360ms");
+        const ruleTitle = makeSvg("title");
+        ruleTitle.textContent = "Hệ luật: " + scoreFormat.format(ruleScore);
+        rulePin.append(ruleTitle);
+        svg.append(ripple, rulePin);
+    }
+
+    const wrap = make("div", undefined, "gauge-wrap");
+    wrap.setAttribute?.("aria-hidden", "true");
+    const legend = make("div", undefined, "gauge-legend");
+    const mlKey = make("span", undefined, "gauge-key");
+    mlKey.append(make("i"), "ML");
+    legend.append(mlKey);
+    if (ruleScore !== null) {
+        const ruleKey = make("span", undefined, "gauge-key is-rule");
+        ruleKey.append(make("i"), "Luật");
+        legend.append(ruleKey);
+    }
+    wrap.append(svg, make("span", hasTargetRules ? "Kim: điểm kết hợp" : "Kim: điểm ML", "gauge-caption"), legend);
+    return wrap;
+}
+
+function buildCompareStrip(mlScore, ruleScore, combinedScore, hasTargetRules) {
     const strip = make("div", undefined, "compare-strip");
-    const items = [
-        {label: "ML", val: mlScore, cls: "", delay: "40ms"},
-        {label: "Hệ luật", val: ruleScore, cls: " is-rule", delay: "130ms"},
-        {label: "Kết hợp", val: combinedScore, cls: " is-combined", delay: "220ms"},
-    ];
+    strip.append(make("strong", "So sánh điểm hỗ trợ", "compare-title"));
+    const items = [{label: "ML", val: mlScore, cls: "", delay: "40ms"}];
+    if (hasTargetRules || ruleScore !== null) {
+        items.push(
+            {label: "Hệ luật", val: ruleScore, cls: " is-rule", delay: "130ms"},
+            {label: "Kết hợp", val: combinedScore, cls: " is-combined", delay: "220ms"}
+        );
+    }
     for (const item of items) {
         const row = make("div", undefined, "compare-row");
         const track = make("div", undefined, "compare-track");
@@ -1249,6 +1336,9 @@ function buildCompareStrip(mlScore, ruleScore, combinedScore) {
     const axis = make("div", undefined, "compare-axis");
     axis.append(make("span", "0%"), make("span", "Ngưỡng 50%"), make("span", "100%"));
     strip.append(axis);
+    if (ruleScore === null) {
+        strip.append(make("p", hasTargetRules ? "Không có luật đích khớp." : "Bộ dữ liệu chưa có luật đích.", "compare-note"));
+    }
     return strip;
 }
 
@@ -1331,12 +1421,13 @@ function buildFuzzyCurveFigure(fact, disease, dataset, index) {
 
 function renderLivePipeline(trace, disease, missing) {
     const container = byId("livePipeline");
-    if (!container) return;
+    const details = byId("fusionDetails");
+    if (!container || !details) return;
     const result = trace.result;
     const targetRules = trace.fired_rules.filter(r => r.used_in_fusion);
 
     const head = make("div", undefined, "pipeline-head");
-    head.append(make("p", "Sơ đồ phép gộp trực tiếp", "pipeline-title"));
+    head.append(make("p", "Công thức phép gộp", "pipeline-title"));
 
     // Copy formula button (follows copy-button guide)
     const copyWrap = make("span", undefined, "copy-wrap");
@@ -1360,7 +1451,7 @@ function renderLivePipeline(trace, disease, missing) {
     mlNode.style?.setProperty?.("--delay", "20ms");
     mlNode.append(
         make("small", "Nhánh ML · " + trace.ml.model + (missing.length ? " (điền trung vị)" : "")),
-        make("strong", "p = " + mathFormat.format(trace.ml.score))
+        make("strong", scoreFormat.format(trace.ml.score))
     );
 
     const ruleNode = make("div", undefined, "pipe-node" + (result.rule_score === null ? " is-inactive" : ""));
@@ -1369,14 +1460,14 @@ function renderLivePipeline(trace, disease, missing) {
         make("small", result.rule_score === null
             ? (disease.has_target_rules ? "Luật đích (0 khớp)" : "Chưa có luật đích")
             : ("Luật đích (" + targetRules.length + " luật khớp)")),
-        make("strong", result.rule_score === null ? "C_rule = —" : ("C_rule = " + mathFormat.format(result.rule_score)))
+        make("strong", result.rule_score === null ? "Chưa có điểm" : scoreFormat.format(result.rule_score))
     );
 
     const finalNode = make("div", undefined, "pipe-node is-final");
     finalNode.style?.setProperty?.("--delay", "200ms");
     finalNode.append(
-        make("small", "Gộp mới → Nhãn " + result.predicted_label),
-        make("strong", "C_new = " + mathFormat.format(result.combined_score))
+        make("small", (disease.has_target_rules ? "Kết hợp" : "Điểm ML") + " · Nhãn " + result.predicted_label),
+        make("strong", scoreFormat.format(result.combined_score))
     );
 
     nodes.append(mlNode, makePipeConnector("+", 90), ruleNode, makePipeConnector("→", 180), finalNode);
@@ -1399,8 +1490,10 @@ function renderLivePipeline(trace, disease, missing) {
         );
     }
 
-    container.replaceChildren(head, buildCompareStrip(trace.ml.score, result.rule_score, result.combined_score), nodes, formula);
+    container.replaceChildren(make("p", disease.has_target_rules ? "Sơ đồ kết hợp điểm" : "Sơ đồ điểm ML", "pipeline-title"), nodes);
     container.hidden = false;
+    details.replaceChildren(head, formula);
+    details.hidden = false;
 }
 
 /* ===== Main Trace Renderer ===== */
@@ -1569,6 +1662,11 @@ function renderTrace(trace, disease, {preserveWhy = false} = {}) {
     }
     scoreLine.append(termWrap, transition);
 
+    const visuals = make("div", undefined, "result-visuals");
+    const gauge = buildSupportGauge(combined, mlScore, ruleScore, disease.has_target_rules);
+    if (gauge) visuals.append(gauge);
+    visuals.append(buildCompareStrip(mlScore, ruleScore, combined, disease.has_target_rules));
+
     const targetRules = trace.fired_rules.filter(r => r.used_in_fusion);
     const secondaryRules = trace.fired_rules.filter(r => !r.used_in_fusion);
     const boundaryFacts = derivedFacts.filter(f => f.membership !== null && Math.abs(f.membership - 0.5) < 1e-9);
@@ -1633,7 +1731,7 @@ function renderTrace(trace, disease, {preserveWhy = false} = {}) {
         whyPanel.hidden = !whyExpanded;
     });
 
-    summary.replaceChildren(verdictEl, scoreLine, whyRow, whyPanel);
+    summary.replaceChildren(verdictEl, scoreLine, visuals, whyRow, whyPanel);
 
     renderLivePipeline(trace, disease, missing);
 }
