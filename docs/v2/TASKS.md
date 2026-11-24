@@ -4,7 +4,7 @@ Mốc nộp chính là cuối ngày 3. Bạn phụ trách sản phẩm và hệ 
 
 ## Chốt trước triển khai
 
-- [ ] **V2-00 · Hai người · Chốt SSTR.** Đủ bốn tài liệu, mốc ngày 3 và ngày 4 phân biệt rõ, giao thức Cleveland đã ghi trước thí nghiệm, mọi task có người phụ trách và tiêu chí kiểm tra.
+- [x] **V2-00 · Hai người · Chốt SSTR.** Đủ bốn tài liệu, mốc ngày 3 và ngày 4 phân biệt rõ, giao thức Cleveland đã ghi trước thí nghiệm, mọi task có người phụ trách và tiêu chí kiểm tra.
 
 ## Mốc bàn giao cuối ngày 3
 

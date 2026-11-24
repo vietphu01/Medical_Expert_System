@@ -23,5 +23,6 @@
 | Mốc | Kiểm tra và bằng chứng | Kết quả | Bước tiếp |
 |---|---|---|---|
 | 25/11, đối chiếu nền V1 tại `f189b3e` | Chạy `.venv/bin/python -B -m unittest discover -s tests -q` với `MEDICAL_HISTORY_DB` trỏ vào thư mục tạm. Đối chiếu SHA-256 theo `docs/t10_lock.json` | 50/50 đạt và các mã kiểm tra nêu trên khớp | Bắt đầu phần dữ liệu và luồng website theo [TASKS](TASKS.md) |
+| 25/11, V2-00 tại `6ebd587` | Đọc thay đổi của kế hoạch và bốn tệp SSTR, đối chiếu bảng, mốc, mã task và 44 liên kết nội bộ bằng Python. Chạy `git diff --cached --check` trước commit | Đạt nghiệm thu tài liệu. Các task triển khai V2-01 đến V2-07 còn mở | Partner bắt đầu V2-01. Bạn bắt đầu V2-02 và thiết kế lịch hẹn cho V2-03 |
 
 Mỗi task hoàn thành thêm một dòng với mã task, commit, lệnh đã chạy, kết quả và đường dẫn bằng chứng. Ghi số giờ thực tế khi tổng kết ngày. Bất kỳ kết quả V2 nào bị mất hiệu lực cần được ghi ở đây cùng lý do và các bảng hoặc hình bị ảnh hưởng trước khi sửa.
