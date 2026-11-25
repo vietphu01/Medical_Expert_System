@@ -96,7 +96,7 @@ Ngày 22/11 đã kiểm tra trình duyệt với SQLite tạm: ca 5 cho 14,3% ML
 
 ## Tái cấu trúc thư mục mã nguồn
 
-Cấu trúc mới được mô tả ở [README](../README.md#cấu-trúc-thư-mục). Đợt này chỉ di chuyển tệp, đổi tên module và sửa `import`, không đổi logic, mô hình, luật, ngưỡng hay dữ liệu. Tệp [khóa T10](../manifests/t10_lock.json) giữ nguyên nội dung và băm theo **đường dẫn cũ ở commit `b24a03c`**. Tại commit đó 17/17 băm khớp. Do đường dẫn và dòng `import` đổi, `scripts.evaluate` ở bố cục mới sẽ báo băm tệp phương pháp không khớp nếu chạy lại. Đây là hệ quả dự kiến, vì run `t10-test-seed42` đã chạy và lệnh từ chối ghi đè. Muốn kiểm khóa, đối chiếu bằng `git show b24a03c:<đường dẫn cũ>`.
+Commit `a4bd87f`. Cấu trúc mới được mô tả ở [README](../README.md#cấu-trúc-thư-mục). Đợt này chỉ di chuyển tệp, đổi tên module và sửa `import`, không đổi logic, mô hình, luật, ngưỡng hay dữ liệu. Tệp [khóa T10](../manifests/t10_lock.json) giữ nguyên nội dung và băm theo **đường dẫn cũ ở commit `b24a03c`**. Tại commit đó 17/17 băm khớp. Do đường dẫn và dòng `import` đổi, `scripts.evaluate` ở bố cục mới sẽ báo băm tệp phương pháp không khớp nếu chạy lại. Đây là hệ quả dự kiến, vì run `t10-test-seed42` đã chạy và lệnh từ chối ghi đè. Muốn kiểm khóa, đối chiếu bằng `git show b24a03c:<đường dẫn cũ>`.
 
 | Đường dẫn cũ | Đường dẫn mới |
 |---|---|
