@@ -5,7 +5,7 @@ from math import isfinite
 from flask import Flask, render_template, request, jsonify
 import sqlite3
 from medical_expert.web.diseases import DISEASES
-from medical_expert.expert.rules import RULES, evaluate_rules
+from medical_expert.expert.rules import RULES, evaluate_rules, rule_schema
 from medical_expert.expert.fusion import make_trace
 from medical_expert.ml.runtime import NAMES, load_run
 
@@ -49,7 +49,11 @@ def list_diseases():
     for key, disease in DISEASES.items():
         dataset = DATASET_BY_DISEASE[key]
         catalog[key] = {k: v for k, v in disease.items() if k in ('name', 'icon', 'fields', 'symptoms')}
-        catalog[key].update(dataset=dataset, has_target_rules=any(rule['target'] == dataset for rule in RULES[dataset]))
+        catalog[key].update(
+            dataset=dataset,
+            has_target_rules=any(rule['target'] == dataset for rule in RULES[dataset]),
+            **rule_schema(dataset),
+        )
     return jsonify(catalog)
 
 @app.route('/api/model_stats/<dkey>')
@@ -133,7 +137,7 @@ def diagnose():
         return jsonify(errors={'disease': 'Chọn một nhóm bệnh được hỗ trợ.'}), 400
     dcfg = DISEASES[dkey]
 
-    inputs, _, errors = validate_diagnosis_fields(data, dcfg)
+    inputs, symptoms, errors = validate_diagnosis_fields(data, dcfg)
     if errors:
         return jsonify(errors=errors), 400
     model = MODELS.get(DATASET_BY_DISEASE[dkey])
@@ -149,26 +153,39 @@ def diagnose():
         fact['key']: round(fact['membership'] * 100, 2)
         for fact in facts if fact['key'] is not None and fact['membership'] is not None
     }
-    result_text = [
-        f"{rule['conclusion']} — Điểm hỗ trợ luật: {rule['cf'] * 100:.1f}% (Luật: {rule['id']})"
-        for rule in trace['fired_rules']
-    ]
+    result_text = []
+    for rule in trace['fired_rules']:
+        detail = (
+            f" (CF gốc {rule['base_cf'] * 100:.1f}% × μ {rule['degree'] * 100:.1f}%)"
+            if rule.get('degree') is not None and rule['degree'] < 1.0 else ""
+        )
+        result_text.append(
+            f"{rule['conclusion']} — Điểm hỗ trợ luật: {rule['cf'] * 100:.1f}%{detail} (Luật: {rule['id']})"
+        )
     if trace['result']['rule_status'] == 'no_matching_target_rule':
         result_text.append("Không có luật đích nào khớp với dữ kiện đã nhập.")
 
+    combined_score = trace['result']['combined_score']
+    risk_level = "HIGH" if combined_score >= 0.7 else "MEDIUM" if combined_score >= 0.5 else "LOW"
+
     # 6. Lưu lịch sử
     with closing(sqlite3.connect(app.config['DATABASE'])) as conn, conn:
-        conn.execute("INSERT INTO history (disease, features, ml_prob, risk_level, advice) VALUES (?,?,?,?,?)",
-                     (dkey, str(inputs), ml_prob, "HIGH" if ml_prob > 0.7 else "MEDIUM" if ml_prob > 0.4 else "LOW", " | ".join(result_text)))
-    
-    return jsonify({
+        conn.execute(
+            "INSERT INTO history (disease, features, ml_prob, risk_level, advice) VALUES (?,?,?,?,?)",
+            (dkey, str(inputs), ml_prob, risk_level, " | ".join(result_text)),
+        )
+
+    response = {
         'ml_probability': round(ml_prob * 100, 2),
         'ml_model': model_name,
         'fuzzy_values': fuzzy_values,
         'expert_conclusions': result_text,
         'fired_rules': [rule['id'] for rule in fired],
         'trace': trace,
-    })
+    }
+    if symptoms:
+        response['ignored_extra_facts'] = sorted(symptoms)
+    return jsonify(response)
 
 @app.route('/api/history')
 def get_history():

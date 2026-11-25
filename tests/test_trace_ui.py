@@ -15,12 +15,13 @@ ROOT = Path(__file__).resolve().parents[1]
 class TraceUiTests(unittest.TestCase):
     def test_waiting_rule_preview_agrees_with_backend_for_fixture_inputs(self):
         cases = [
+            {'dataset': 'cleveland', 'inputs': {'age': 60, 'bp': 135, 'chol': 180}},
             {'dataset': 'cleveland', 'inputs': {'age': 60, 'bp': 135, 'chol': 200}},
-            {'dataset': 'cleveland', 'inputs': {'age': 60, 'bp': 135, 'chol': 201}},
             {'dataset': 'cleveland', 'inputs': {'age': 60, 'bp': 135, 'chol': None}},
             {'dataset': 'cleveland', 'inputs': {'age': 50, 'bp': 135, 'chol': None}},
+            {'dataset': 'pima', 'inputs': {'age': 45, 'glucose': 90, 'bmi': 25}},
             {'dataset': 'pima', 'inputs': {'age': 45, 'glucose': 90, 'bmi': 26}},
-            {'dataset': 'pima', 'inputs': {'age': 45, 'glucose': 175, 'bmi': 33}},
+            {'dataset': 'pima', 'inputs': {'age': 75, 'glucose': 175, 'bmi': 33}},
             {'dataset': 'pima', 'inputs': {'age': 45, 'glucose': None, 'bmi': None}},
             {'dataset': 'ilpd', 'inputs': {'age': 45, 'albumin': 4, 'bilirubin': 1}},
         ]
@@ -40,8 +41,11 @@ process.stdout.write(JSON.stringify(cases.map(item => context.previewTargetRules
                 _, fired = evaluate_rules(case['dataset'], case['inputs'])
                 target_count = sum(rule['target'] == case['dataset'] for rule in fired)
                 self.assertEqual(preview['matched'], target_count)
+        self.assertEqual(previews[0]['matched'], 0)
+        self.assertEqual(previews[1]['matched'], 1)
         self.assertTrue(previews[2]['pending'])
         self.assertFalse(previews[3]['pending'])
+        self.assertEqual(previews[6]['matched'], 1)
 
     def test_result_visuals_use_trace_scores_and_handle_missing_rules(self):
         harness = r"""

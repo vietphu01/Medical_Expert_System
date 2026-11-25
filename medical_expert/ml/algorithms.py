@@ -145,11 +145,12 @@ class DecisionTreeScratch:
         return best
     def _build(self, X, y, depth=0):
         dist = np.bincount(y, minlength=2).tolist() if len(y) > 0 else [0, 0]
+        leaf_class = int(dist[1] >= dist[0]) if sum(dist) > 0 else 0
         if depth >= self.max_depth or len(np.unique(y)) == 1 or len(y) < self.min_samples_split:
-            return {'leaf': True, 'class': int(np.argmax(dist)), 'dist': dist, 'n': len(y)}
+            return {'leaf': True, 'class': leaf_class, 'dist': dist, 'n': len(y)}
         gain, f, t = self._best_split(X, y)
         if f is None or gain <= 0:
-            return {'leaf': True, 'class': int(np.argmax(dist)), 'dist': dist, 'n': len(y)}
+            return {'leaf': True, 'class': leaf_class, 'dist': dist, 'n': len(y)}
         mask = X[:, f] <= t
         return {
             'leaf': False, 'feature': f, 'threshold': float(t), 'gain': float(gain),

@@ -8,10 +8,9 @@ const collator = new Intl.Collator("vi-VN", {numeric: true, sensitivity: "base"}
 
 const factLabels = {
     age_at_least_55: "Tuổi từ 55 trở lên",
-    chol_elevated: "Cholesterol tăng theo quy tắc Cleveland",
-    age_35_to_70: "Tuổi từ 35 đến 70",
-    bmi_elevated: "BMI vượt mốc thứ nhất",
-    bmi_higher: "BMI vượt mốc thứ hai",
+    chol_elevated: "Cholesterol tăng theo quy tắc Cleveland (180–220)",
+    age_at_least_35: "Tuổi từ 35 trở lên",
+    bmi_elevated: "BMI tăng theo quy tắc Pima (25–32)",
 };
 
 const DATASET_FACT_SPECS = {
@@ -20,11 +19,8 @@ const DATASET_FACT_SPECS = {
         chol: [{key: "chol_elevated", kind: "ramp", bounds: [180, 220], label: "Cholesterol mờ 180–220"}],
     },
     pima: {
-        age: [{key: "age_35_to_70", kind: "between", bounds: [35, 70], label: "Tuổi 35–70"}],
-        bmi: [
-            {key: "bmi_elevated", kind: "ramp", bounds: [23, 27], label: "BMI mốc 1 (23–27)"},
-            {key: "bmi_higher", kind: "ramp", bounds: [28, 32], label: "BMI mốc 2 (28–32)"},
-        ],
+        age: [{key: "age_at_least_35", kind: "at_least", bounds: 35, label: "Tuổi ≥ 35"}],
+        bmi: [{key: "bmi_elevated", kind: "ramp", bounds: [25, 32], label: "BMI mờ 25–32"}],
     },
     ilpd: {},
     ckd: {},
@@ -33,19 +29,19 @@ const DATASET_FACT_SPECS = {
 const DEMO_PRESETS = [
     {id: "c1", num: "01", title: "Hợp lệ", disease: "heart", diseaseLabel: "Tim mạch",
      inputs: {age: 60, bp: 135, chol: 230},
-     summary: "Khớp 1 luật đích và 1 luật phụ"},
+     summary: "Khớp luật đích và luật phụ (μ = 100%, CF 35%)"},
     {id: "c2", num: "02", title: "Thiếu cholesterol", disease: "heart", diseaseLabel: "Tim mạch",
      inputs: {age: 60, bp: 135, chol: null},
      summary: "Gửi null · ML điền trung vị, luật bỏ qua"},
-    {id: "c3", num: "03", title: "Đúng biên 50%", disease: "heart", diseaseLabel: "Tim mạch",
+    {id: "c3", num: "03", title: "Mờ một phần", disease: "heart", diseaseLabel: "Tim mạch",
      inputs: {age: 60, bp: 135, chol: 200},
-     summary: "Cholesterol = 200 (μ = 50%, chưa vượt ngưỡng)"},
-    {id: "c4", num: "04", title: "2 luật đích", disease: "diabetes", diseaseLabel: "Tiểu đường",
+     summary: "Cholesterol = 200 (μ = 50% → CF hiệu lực 17,5%)"},
+    {id: "c4", num: "04", title: "BMI mờ đầy đủ", disease: "diabetes", diseaseLabel: "Tiểu đường",
      inputs: {glucose: 175, bmi: 33, age: 45},
-     summary: "Khớp 2 luật BMI rồi gộp ML một lần"},
-    {id: "c5", num: "05", title: "ML bất đồng luật", disease: "diabetes", diseaseLabel: "Tiểu đường",
+     summary: "BMI 33 đạt μ = 100% (1 luật liên tục, không gộp trùng)"},
+    {id: "c5", num: "05", title: "ML thấp + luật nhẹ", disease: "diabetes", diseaseLabel: "Tiểu đường",
      inputs: {glucose: 90, bmi: 26, age: 45},
-     summary: "ML 14,3% (âm) nhưng luật đẩy lên 57,1% (dương)"},
+     summary: "ML 14,3% · luật mờ nhẹ (μ = 14,3%) không phủ quyết ML"},
     {id: "c6", num: "06", title: "Ngoài miền nhập", disease: "heart", diseaseLabel: "Tim mạch",
      inputs: {age: 60, bp: 135, chol: 900},
      summary: "Cholesterol = 900 · báo lỗi ngay dưới ô nhập"},
@@ -458,8 +454,8 @@ function initNavigation() {
 }
 
 /* ===== Fact Curves and Form Labels ===== */
-function findFactSpec(dataset, factKey) {
-    const groups = DATASET_FACT_SPECS[dataset];
+function findFactSpec(dataset, factKey, disease) {
+    const groups = disease?.fact_specs || DATASET_FACT_SPECS[dataset];
     if (!groups) return null;
     for (const [feature, specs] of Object.entries(groups)) {
         const hit = specs.find(s => s.key === factKey);
@@ -468,11 +464,11 @@ function findFactSpec(dataset, factKey) {
     return null;
 }
 
-// Preview the same target-rule conditions shown in medical_expert/expert/rules.py; the API
-// remains the source of the actual inference result.
+// Fallback target-rule conditions matching medical_expert/expert/rules.py;
+// when loaded via Flask, /api/diseases provides fact_specs and target_rules directly.
 const TARGET_RULE_CONDS = {
     cleveland: [["age_at_least_55", "chol_elevated"]],
-    pima: [["age_35_to_70", "bmi_elevated"], ["age_35_to_70", "bmi_higher"]],
+    pima: [["age_at_least_35", "bmi_elevated"]],
 };
 const SHORT_MODEL_NAMES = {
     "Gaussian Naive Bayes": "Gaussian NB",
@@ -482,9 +478,11 @@ const SHORT_MODEL_NAMES = {
     "Ensemble Voting": "Ensemble",
 };
 
-function previewTargetRules(dataset, values) {
+function previewTargetRules(dataset, values, disease) {
+    const factGroups = disease?.fact_specs || DATASET_FACT_SPECS[dataset] || {};
+    const ruleConds = disease?.target_rules || TARGET_RULE_CONDS[dataset] || [];
     const facts = {};
-    for (const [feature, specs] of Object.entries(DATASET_FACT_SPECS[dataset] || {})) {
+    for (const [feature, specs] of Object.entries(factGroups)) {
         for (const spec of specs) {
             const value = values[feature];
             if (value == null || !Number.isFinite(value)) {
@@ -495,11 +493,11 @@ function previewTargetRules(dataset, values) {
                 facts[spec.key] = value >= spec.bounds[0] && value <= spec.bounds[1];
             } else {
                 const [low, high] = spec.bounds;
-                facts[spec.key] = Math.min(1, Math.max(0, (value - low) / (high - low))) > 0.5;
+                facts[spec.key] = Math.min(1, Math.max(0, (value - low) / (high - low))) > 0;
             }
         }
     }
-    const outcomes = (TARGET_RULE_CONDS[dataset] || []).map(conditions => {
+    const outcomes = ruleConds.map(conditions => {
         if (conditions.some(key => facts[key] === false)) return false;
         return conditions.some(key => facts[key] == null) ? null : true;
     });
@@ -542,7 +540,7 @@ function updateWaitingPlaceholder() {
         nodeRules.textContent = "Chưa có luật đích";
         preview.textContent = "Chỉ chạy ML · chưa có luật đích";
     } else {
-        const state = previewTargetRules(disease.dataset, values);
+        const state = previewTargetRules(disease.dataset, values, disease);
         matched = state.matched;
         nodeRules.textContent = !matched && state.pending ? "Chờ dữ kiện" : matched + " luật dự khớp";
         preview.textContent = matched ? "Dự kiến " + matched + " luật đích khớp" :
@@ -1364,7 +1362,7 @@ function makePipeConnector(symbol, delayMs) {
 
 function buildFuzzyCurveFigure(fact, disease, dataset, index) {
     if (typeof document.createElementNS !== "function") return null;
-    const spec = findFactSpec(dataset, fact.key);
+    const spec = findFactSpec(dataset, fact.key, disease);
     const field = disease.fields.find(f => f.key === fact.feature);
     if (!spec || !field) return null;
 
@@ -1405,8 +1403,8 @@ function buildFuzzyCurveFigure(fact, disease, dataset, index) {
     if (fact.value !== null && fact.membership !== null) {
         const vx = xOf(fact.value);
         const vy = yOf(fact.membership);
-        const isBoundary = Math.abs(fact.membership - 0.5) < 1e-9;
-        const dotColor = fact.value_boolean ? "var(--brand)" : (isBoundary ? "var(--mod-accent)" : "var(--muted)");
+        const isPartial = fact.membership > 0 && fact.membership < 1;
+        const dotColor = fact.membership >= 1 ? "var(--brand)" : (isPartial ? "var(--mod-accent)" : "var(--muted)");
         const drop = makeSvg("line", {x1: vx.toFixed(1), y1: vy.toFixed(1), x2: vx.toFixed(1), y2: yOf(0).toFixed(1), class: "fuzzy-curve-drop"});
         drop.style?.setProperty?.("--tone-dot", dotColor);
         const dot = makeSvg("circle", {cx: vx.toFixed(1), cy: vy.toFixed(1), r: 3.8, fill: dotColor, stroke: "var(--surface)", "stroke-width": 1.6, class: "fuzzy-curve-dot"});
@@ -1529,7 +1527,10 @@ function renderTrace(trace, disease, {preserveWhy = false} = {}) {
         const row = make("li", undefined, "fact-card");
         row.style?.setProperty?.("--delay", (idx * 65) + "ms");
         const head = make("div", undefined, "fact-head");
-        const stateText = fact.value_boolean === null ? "Chưa biết" : (fact.value_boolean ? "Đúng" : "Sai");
+        const isPartial = fact.membership !== null && fact.membership > 0 && fact.membership < 1;
+        const stateText = fact.value_boolean === null
+            ? "Chưa biết"
+            : (isPartial ? "Mờ " + scoreFormat.format(fact.membership) : (fact.value_boolean ? "Đúng" : "Sai"));
         const stateCls = fact.value_boolean === null ? "is-unknown" : (fact.value_boolean ? "is-true" : "is-false");
         head.append(
             make("b", factLabels[fact.key] || fact.key),
@@ -1543,14 +1544,13 @@ function renderTrace(trace, disease, {preserveWhy = false} = {}) {
             if (fact.membership !== null) {
                 const meterRow = make("div", undefined, "fact-meter-row");
                 const meter = make("div", undefined, "fact-meter");
-                const isBoundary = Math.abs(fact.membership - 0.5) < 1e-9;
-                const fill = make("div", undefined, "fact-meter-fill" + (fact.value_boolean ? " is-true" : (isBoundary ? " is-boundary" : "")));
+                const fill = make("div", undefined, "fact-meter-fill" + (fact.membership >= 1 ? " is-true" : (isPartial ? " is-boundary" : "")));
                 if (fill.style) {
                     fill.style.width = (Math.min(1, Math.max(0, fact.membership)) * 100).toFixed(1) + "%";
                     fill.style.setProperty?.("--delay", (80 + idx * 70) + "ms");
                 }
                 meter.append(fill);
-                const labelVal = "μ = " + scoreFormat.format(fact.membership) + (isBoundary ? " (biên 50%)" : "");
+                const labelVal = "μ = " + scoreFormat.format(fact.membership) + (isPartial ? " (mờ liên tục)" : "");
                 meterRow.append(meter, make("span", labelVal, "fact-meter-val"));
                 bodyGrid.append(meterRow);
             } else {
@@ -1574,7 +1574,10 @@ function renderTrace(trace, disease, {preserveWhy = false} = {}) {
             make("code", rule.id),
             make("span", rule.used_in_fusion ? "Dùng để gộp" : "Luật phụ", "rule-role")
         );
-        top.append(left, make("span", "CF " + scoreFormat.format(rule.cf), "rule-cf"));
+        const cfLabel = (rule.base_cf != null && rule.degree != null && rule.degree < 1)
+            ? ("CF " + scoreFormat.format(rule.cf) + " (" + scoreFormat.format(rule.base_cf) + " × μ " + scoreFormat.format(rule.degree) + ")")
+            : ("CF " + scoreFormat.format(rule.cf));
+        top.append(left, make("span", cfLabel, "rule-cf"));
 
         const conds = make("div", undefined, "rule-conds");
         conds.append(make("span", "NẾU:"));
@@ -1605,6 +1608,7 @@ function renderTrace(trace, disease, {preserveWhy = false} = {}) {
     const mlPos = mlScore >= 0.5;
     const finalPos = result.predicted_label === 1;
     const scoreIncreased = ruleScore !== null && combined > mlScore + 1e-4;
+    const allMissing = disease.fields.length > 0 && missing.length === disease.fields.length;
     const isOpen = preserveWhy ? whyExpanded : false;
     whyExpanded = isOpen;
 
@@ -1615,7 +1619,10 @@ function renderTrace(trace, disease, {preserveWhy = false} = {}) {
 
     let verdictText;
     const thresholdWord = combined === 0.5 ? "đạt" : "vượt";
-    if (ruleScore !== null) {
+    if (allMissing) {
+        verdictText = "Chưa nhập chỉ số bệnh nhân — điểm hiện tại chỉ phản ánh trung vị tập train (" +
+            (finalPos ? thresholdWord + " ngưỡng 50%" : "dưới ngưỡng 50%") + ").";
+    } else if (ruleScore !== null) {
         if (!mlPos && finalPos) {
             verdictText = "Điểm " + thresholdWord + " ngưỡng 50% sau khi kết hợp luật.";
         } else if (finalPos) {
@@ -1669,7 +1676,6 @@ function renderTrace(trace, disease, {preserveWhy = false} = {}) {
 
     const targetRules = trace.fired_rules.filter(r => r.used_in_fusion);
     const secondaryRules = trace.fired_rules.filter(r => !r.used_in_fusion);
-    const boundaryFacts = derivedFacts.filter(f => f.membership !== null && Math.abs(f.membership - 0.5) < 1e-9);
 
     let whyLabel = "Vì sao có kết quả này?";
     if (scoreIncreased) {
@@ -1708,9 +1714,6 @@ function renderTrace(trace, disease, {preserveWhy = false} = {}) {
         }
     } else if (disease.has_target_rules) {
         whySentence = "Không có luật đích nào khớp với các chỉ số hiện tại, nên điểm kết hợp giữ nguyên theo ML.";
-        if (boundaryFacts.length) {
-            whySentence += " Dữ kiện ở đúng biên 50% chưa được tính là đúng; cần lớn hơn 50%.";
-        }
     } else {
         whySentence = "Bộ dữ liệu này chưa có luật đích nên điểm kết hợp giữ nguyên theo mô hình ML.";
     }

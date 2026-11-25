@@ -1,4 +1,10 @@
-"""Rule candidates for the four dataset targets, reviewed before the holdout."""
+"""Continuous fuzzy rules for the four dataset targets.
+
+Rules scale their base certainty factor by the minimum premise membership
+(alpha = min(mu_i) > 0), keep target base CF below 0.5 so a single rule boosts
+borderline ML scores without vetoing strongly negative ML scores, and avoid
+nested overlapping rules on the same feature.
+"""
 
 from medical_expert.expert.fuzzy import fuzzy_membership
 
@@ -15,9 +21,8 @@ FACTS = {
         "chol_elevated": ("chol", "ramp", (180, 220)),
     },
     "pima": {
-        "age_35_to_70": ("age", "between", (35, 70)),
-        "bmi_elevated": ("bmi", "ramp", (23, 27)),
-        "bmi_higher": ("bmi", "ramp", (28, 32)),
+        "age_at_least_35": ("age", "at_least", 35),
+        "bmi_elevated": ("bmi", "ramp", (25, 32)),
     },
     "ilpd": {},
     "ckd": {},
@@ -26,30 +31,42 @@ RULES = {
     "cleveland": (
         {
             "id": "CLEV_TARGET_01", "conditions": ("age_at_least_55", "chol_elevated"),
-            "target": "cleveland", "cf": 0.55,
+            "target": "cleveland", "cf": 0.35,
             "conclusion": "Tuổi và cholesterol hỗ trợ lớp dương Cleveland",
         },
         {
             "id": "CLEV_SECONDARY_01", "conditions": ("chol_elevated",),
-            "target": None, "cf": 0.4,
+            "target": None, "cf": 0.30,
             "conclusion": "Cholesterol toàn phần vượt mốc tham chiếu của đồ án",
         },
     ),
     "pima": (
         {
-            "id": "PIMA_TARGET_01", "conditions": ("age_35_to_70", "bmi_elevated"),
-            "target": "pima", "cf": 0.5,
-            "conclusion": "Tuổi và BMI hỗ trợ lớp dương Pima",
-        },
-        {
-            "id": "PIMA_TARGET_02", "conditions": ("age_35_to_70", "bmi_higher"),
-            "target": "pima", "cf": 0.55,
-            "conclusion": "Tuổi và mức BMI cao hơn hỗ trợ lớp dương Pima",
+            "id": "PIMA_TARGET_01", "conditions": ("age_at_least_35", "bmi_elevated"),
+            "target": "pima", "cf": 0.35,
+            "conclusion": "Tuổi và mức BMI hỗ trợ lớp dương Pima",
         },
     ),
     "ilpd": (),
     "ckd": (),
 }
+
+
+def rule_schema(dataset):
+    """Return JSON-serializable fact and target-rule metadata for the frontend."""
+    facts_by_feature = {}
+    for key, (feature, kind, bounds) in FACTS[dataset].items():
+        facts_by_feature.setdefault(feature, []).append({
+            "key": key,
+            "kind": kind,
+            "bounds": list(bounds) if isinstance(bounds, tuple) else bounds,
+        })
+    target_rules = [
+        list(rule["conditions"])
+        for rule in RULES[dataset]
+        if rule["target"] == dataset
+    ]
+    return {"fact_specs": facts_by_feature, "target_rules": target_rules}
 
 
 def _membership(value, kind, bounds):
@@ -66,18 +83,18 @@ def _membership(value, kind, bounds):
 
 
 def evaluate_rules(dataset, inputs):
-    """Return facts on raw features and every rule matched by known-true facts."""
+    """Return facts on raw features and every rule fired with positive fuzzy degree."""
     units = FEATURE_UNITS[dataset]
     facts = []
-    values = {}
+    memberships = {}
     for key, (feature, kind, bounds) in FACTS[dataset].items():
         value = inputs.get(feature)
         membership = _membership(value, kind, bounds)
-        boolean = None if membership is None else membership > 0.5
-        values[key] = boolean
+        active = None if membership is None else membership > 0.0
+        memberships[key] = membership
         facts.append({
             "feature": feature, "unit": units[feature], "value": value,
-            "membership": membership, "key": key, "value_boolean": boolean,
+            "membership": membership, "key": key, "value_boolean": active,
         })
     tagged = {fact["feature"] for fact in facts}
     for feature, unit in units.items():
@@ -86,9 +103,19 @@ def evaluate_rules(dataset, inputs):
                 "feature": feature, "unit": unit, "value": inputs.get(feature),
                 "membership": None, "key": None, "value_boolean": None,
             })
-    fired = [
-        {**rule, "conditions": list(rule["conditions"])}
-        for rule in RULES[dataset]
-        if all(values[key] is True for key in rule["conditions"])
-    ]
+    fired = []
+    for rule in RULES[dataset]:
+        cond_degrees = [memberships[key] for key in rule["conditions"]]
+        if any(degree is None for degree in cond_degrees):
+            continue
+        degree = min(cond_degrees)
+        if degree > 0.0:
+            base_cf = float(rule["cf"])
+            fired.append({
+                **rule,
+                "conditions": list(rule["conditions"]),
+                "base_cf": base_cf,
+                "degree": float(degree),
+                "cf": float(base_cf * degree),
+            })
     return facts, fired

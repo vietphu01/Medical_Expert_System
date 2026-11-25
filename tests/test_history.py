@@ -104,7 +104,19 @@ class HistoryTests(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0][1], 'heart')
         self.assertEqual(round(rows[0][3] * 100, 2), diagnosis.get_json()['ml_probability'])
+        # ml=0.45 with no target rule (age=50 < 55) => combined=0.45 < 0.5 => LOW
+        self.assertEqual(rows[0][4], 'LOW')
+
+        # Now fire target rule (age=60, chol=240 => rule=0.35, combined=0.6425 => MEDIUM)
+        boosted = client.post('/api/diagnose', json={
+            'disease': 'heart',
+            'inputs': {'age': 60, 'bp': 130, 'chol': 240},
+        })
+        self.assertEqual(boosted.status_code, 200)
+        with closing(sqlite3.connect(db_path)) as conn:
+            all_rows = conn.execute('SELECT * FROM history ORDER BY id ASC').fetchall()
+        self.assertEqual(all_rows[1][4], 'MEDIUM')
 
         history = client.get('/api/history')
         self.assertEqual(history.status_code, 200)
-        self.assertEqual(history.get_json(), [list(rows[0])])
+        self.assertEqual(history.get_json(), [list(all_rows[1]), list(all_rows[0])])

@@ -83,6 +83,10 @@ class DiagnosisValidationTests(unittest.TestCase):
                     expected_keys = {'ml_probability', 'fuzzy_values', 'expert_conclusions', 'fired_rules'}
                     self.assertLessEqual(expected_keys, result.keys())
                     self.assertEqual(result['trace']['target'], self.module.DATASET_BY_DISEASE[disease])
+                    if disease == 'heart':
+                        self.assertEqual(result['ignored_extra_facts'], ['chest_pain', 'short_breath'])
+                    else:
+                        self.assertNotIn('ignored_extra_facts', result)
                     self.assertEqual(self.count_history(), before + 1)
 
     def test_trace_includes_only_matching_target_in_fusion(self):
@@ -93,11 +97,22 @@ class DiagnosisValidationTests(unittest.TestCase):
         self.assertEqual(trace['target'], 'cleveland')
         self.assertEqual(trace['ml'], {'model': 'fixture', 'score': 0.45})
         self.assertEqual(trace['result']['rule_status'], 'matched')
-        self.assertAlmostEqual(trace['result']['rule_score'], 0.55)
-        self.assertAlmostEqual(trace['result']['combined_score'], 0.7525)
+        self.assertAlmostEqual(trace['result']['rule_score'], 0.35)
+        self.assertAlmostEqual(trace['result']['combined_score'], 0.6425)
         self.assertEqual({r['id']: r['used_in_fusion'] for r in trace['fired_rules']},
                          {'CLEV_TARGET_01': True, 'CLEV_SECONDARY_01': False})
         self.assertEqual(set(result['fired_rules']), {'CLEV_TARGET_01', 'CLEV_SECONDARY_01'})
+
+    def test_diseases_catalog_exposes_rule_schema_and_ckd_accepts_bp_80(self):
+        catalog = self.client.get('/api/diseases').get_json()
+        self.assertEqual(catalog['diabetes']['target_rules'], [['age_at_least_35', 'bmi_elevated']])
+        self.assertIn('bmi', catalog['diabetes']['fact_specs'])
+        kidney_bp = next(f for f in catalog['kidney']['fields'] if f['key'] == 'bp')
+        self.assertEqual(kidney_bp['min'], 50)
+        self.assertEqual(kidney_bp['default'], 80)
+        payload = self.payload('kidney')
+        payload['inputs']['bp'] = 80
+        self.assertEqual(self.client.post('/api/diagnose', json=payload).status_code, 200)
 
     def test_trace_without_target_rule_uses_ml_score(self):
         result = self.client.post('/api/diagnose', json=self.payload('kidney')).get_json()

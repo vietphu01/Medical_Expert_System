@@ -113,3 +113,18 @@ Commit `a4bd87f`. Cấu trúc mới được mô tả ở [README](../README.md#
 | `docs/BAO_CAO_*`, `GHI_CHU_BAO_VE`, `VAN_DAP_BAO_VE`, `KE_HOACH_*` | `docs/reports/` |
 
 Kiểm tra: `.venv/bin/python -B -m unittest discover -s tests -q` với `MEDICAL_HISTORY_DB` tạm cho 50/50 đạt, như trước đợt tái cấu trúc. Điểm ML của bốn bộ trên bốn véc-tơ đầu vào cố định từ `results/t06-cv-seed42` giống hệt trước và sau. 358 liên kết nội bộ trong Markdown không hỏng. Tệp `__pycache__` và `medical_history.db` bị gỡ khỏi chỉ mục Git và vào `.gitignore`, tệp trên đĩa không bị xóa.
+
+## Sửa lỗi logic suy luận, hệ luật mờ liên tục và đồng bộ GUI (25/11/2026)
+
+> **Hiệu lực kết quả cũ (quy định AGENTS.md):** Đợt thay đổi này sửa trực tiếp phương pháp suy luận luật/CF ([rules.py](../medical_expert/expert/rules.py)) và quy tắc gán nhãn lá hòa của cây quyết định ([algorithms.py](../medical_expert/ml/algorithms.py)). Do đó, các số liệu thực nghiệm V1 đã lưu (`results/t09-validation-seed42`, `results/t10-test-seed42` và [khóa T10](../manifests/t10_lock.json)) **chỉ có hiệu lực với phiên bản V1 cũ (đến commit `f88e037` / `b24a03c`)**, không được dùng để báo cáo hiệu năng của hệ luật mới. Mọi đánh giá định lượng cho logic suy luận mới cần giao thức đánh giá mới độc lập. Không đọc hay điều chỉnh dựa trên tập holdout T10 trong đợt sửa này.
+
+Các điểm đã sửa:
+1. **Hàm mờ liên tục nhân vào CF ([rules.py](../medical_expert/expert/rules.py), [fuzzy.py](../medical_expert/expert/fuzzy.py)):** Bỏ cắt ngưỡng cứng `membership > 0.5`; luật kích hoạt khi $\alpha = \min(\mu_i) > 0$ và tính `cf = base_cf * alpha` (lưu đủ `base_cf`, `degree`, `cf` trong trace), loại bỏ bước nhảy đột ngột tại biên (ví dụ Cleveland `chol = 200 → 201`). Xóa hàm chết `compute_fuzzy_facts()` và thêm kiểm tra `low < high`.
+2. **Chống phủ quyết ML và bỏ luật lồng nhau/trần tuổi 70 ([rules.py](../medical_expert/expert/rules.py)):** Giảm `base_cf` luật đích về `0.35` (`< 0.5`) để luật nâng các ca ML sát ngưỡng (`p >= 0.231`) thay vì phủ quyết tuyệt đối khi `ML = 0%`. Pima gộp 2 luật BMI lồng nhau thành 1 luật mờ liên tục `bmi_elevated` trên `[25, 32]` và đổi `age_35_to_70` thành `age_at_least_35` để không bỏ sót người 71–85 tuổi.
+3. **Sửa mâu thuẫn lá hòa của Decision Tree ([algorithms.py](../medical_expert/ml/algorithms.py)):** Đổi `leaf['class']` sang `int(dist[1] >= dist[0])` để khớp với `predict()` (`d[1]/total >= 0.5`) và `export_rules()`.
+4. **Sửa miền nhập CKD và dọn cấu hình chết ([diseases.py](../medical_expert/web/diseases.py)):** Mở miền huyết áp CKD thành `50–200` mmHg (mặc định `80` khớp trung vị train) để form nhập được ca âm tính thay vì luôn rơi vào nhánh `bp > 80` (100% dương). Xóa cấu hình `fuzzy` cũ, `healthy_params`, `sick_params`, `rule_file_prefix` và `generate_dataset()`.
+5. **Đồng bộ Backend–DB–UI ([app.py](../medical_expert/web/app.py), [workspace.js](../medical_expert/web/static/workspace.js)):** Đồng bộ `risk_level` trong SQLite theo `combined_score` với ngưỡng `0.5 / 0.7`; trả `fact_specs` và `target_rules` từ `/api/diseases` làm nguồn chuẩn cho JS; trả `ignored_extra_facts` minh bạch khi client gửi `extra_facts`; cảnh báo rõ trên UI khi bỏ trống toàn bộ chỉ số.
+
+Giới hạn dữ liệu/mô hình đã train ở `t06-cv-seed42` (không thuộc lỗi code): đuôi không đơn điệu của Gaussian NB trên Cleveland, lệch lớp trên ILPD và thiếu đơn vị xác minh cho glucose Pima, ILPD, CKD vẫn giữ nguyên đến khi tái huấn luyện theo giao thức mới.
+
+Kiểm tra: `.venv/bin/python -B -m unittest discover -s tests -v` với `MEDICAL_HISTORY_DB` tạm đạt **54/54** (thêm test cho lá hòa `DecisionTreeScratch`, biên `fuzzy_membership`, schema luật API, CKD `bp=80`, `risk_level` lịch sử và preview mờ liên tục); `node --check medical_expert/web/static/workspace.js` đạt.
