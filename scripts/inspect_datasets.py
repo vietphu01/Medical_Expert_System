@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-from dataset_registry import DATASETS
+from medical_expert.data.registry import DATASETS
 
 
 def main():

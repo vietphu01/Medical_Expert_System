@@ -2,7 +2,7 @@
 
 import unittest
 
-from experiment_metrics import aggregate_metrics, binary_metrics
+from medical_expert.ml.metrics import aggregate_metrics, binary_metrics
 
 
 class BinaryMetricsTest(unittest.TestCase):

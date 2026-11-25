@@ -1,6 +1,6 @@
 # Xác minh ILPD và CKD
 
-Đối chiếu ngày 18/11/2026. Cả hai bộ nguồn được UCI công bố theo [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Repo lưu [metadata tổng hợp](t05_dataset_metadata.json) và [manifest ID](t05_split_manifest.json). SHA-256 của từng tệp nguồn nằm trong cả hai file. Hai nguồn không có cột ID bệnh nhân.
+Đối chiếu ngày 18/11/2026. Cả hai bộ nguồn được UCI công bố theo [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Repo lưu [metadata tổng hợp](../../manifests/t05_dataset_metadata.json) và [manifest ID](../../manifests/t05_split_manifest.json). SHA-256 của từng tệp nguồn nằm trong cả hai file. Hai nguồn không có cột ID bệnh nhân.
 
 ## ILPD
 

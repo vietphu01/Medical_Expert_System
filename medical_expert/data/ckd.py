@@ -2,7 +2,7 @@
 
 import csv
 
-from dataset_loaders import _load
+from medical_expert.data.loaders import _load
 
 CKD_COLUMNS = (
     "age", "bp", "sg", "al", "su", "rbc", "pc", "pcc", "ba", "bgr",

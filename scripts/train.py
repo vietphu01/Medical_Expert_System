@@ -11,10 +11,10 @@ from pathlib import Path
 
 import numpy as np
 
-from data_pipeline import DEFAULT_SEED, fit_preprocessor, prepare_fold
-from dataset_registry import DATASETS
-from experiment_metrics import aggregate_metrics, binary_metrics
-from model_runtime import CONFIG, NAMES, model_state, new_model
+from medical_expert.data.pipeline import DEFAULT_SEED, fit_preprocessor, prepare_fold
+from medical_expert.data.registry import DATASETS
+from medical_expert.ml.metrics import aggregate_metrics, binary_metrics
+from medical_expert.ml.runtime import CONFIG, NAMES, model_state, new_model
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,8 +37,8 @@ def read_json(path):
 
 def manifests():
     return (
-        read_json(ROOT / "docs/t04_split_manifest.json")
-        | read_json(ROOT / "docs/t05_split_manifest.json")
+        read_json(ROOT / "manifests/t04_split_manifest.json")
+        | read_json(ROOT / "manifests/t05_split_manifest.json")
     )
 
 

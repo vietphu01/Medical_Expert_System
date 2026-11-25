@@ -19,7 +19,7 @@ Giả sử bạn có 5–7 phút như thời lượng đã chuẩn bị trước
 | 4:30–5:30 | Chủ động nói hai hạn chế có số liệu. | AUC Cleveland là 0,534 trên 61 ca. ILPD nhận đúng 5/33 ca âm dù F1 dương 0,834. |
 | Thời gian còn lại | Mở sẵn một file code và bảng kết quả. | Sẵn sàng trả lời về rò rỉ dữ liệu, nguồn luật, hai công thức và điểm chưa hiệu chỉnh. |
 
-Nếu giảng viên ngắt lời sớm, dừng thao tác và trả lời câu hỏi. Sau câu trả lời, quay về đúng đoạn đang trình bày. Một ví dụ đi hết luồng cùng một bảng kiểm chứng đủ để người nghe theo dõi. [Bảng kết quả](T10_HOLDOUT.md) · [Phân tích lỗi](T12_ERROR_ANALYSIS.md)
+Nếu giảng viên ngắt lời sớm, dừng thao tác và trả lời câu hỏi. Sau câu trả lời, quay về đúng đoạn đang trình bày. Một ví dụ đi hết luồng cùng một bảng kiểm chứng đủ để người nghe theo dõi. [Bảng kết quả](../tasks/T10_HOLDOUT.md) · [Phân tích lỗi](../tasks/T12_ERROR_ANALYSIS.md)
 
 ### Công thức trả lời khi bị hỏi sâu
 
@@ -44,7 +44,7 @@ Khi chưa biết, nói đúng phần đã xác minh và chỉ ra phép đo cần
 | ML → gộp mới, FP | 14 → 15 | 19 → 31 |
 | Holdout có luật đích khớp | 27/61 | 50/154 |
 
-Các số là **một lần chia** với seed 42. Không cần thuộc hết mọi chữ số thập phân, nhưng phải biết mỗi số ở tập nào, mẫu số là bao nhiêu và nó trả lời câu hỏi nào. [Kết quả CV](T06_TRAINING.md) · [Kết quả holdout](T10_HOLDOUT.md) · [Chi tiết FP/FN](T12_ERROR_ANALYSIS.md)
+Các số là **một lần chia** với seed 42. Không cần thuộc hết mọi chữ số thập phân, nhưng phải biết mỗi số ở tập nào, mẫu số là bao nhiêu và nó trả lời câu hỏi nào. [Kết quả CV](../tasks/T06_TRAINING.md) · [Kết quả holdout](../tasks/T10_HOLDOUT.md) · [Chi tiết FP/FN](../tasks/T12_ERROR_ANALYSIS.md)
 
 ## 2. Những câu hỏi có thể bị hỏi liên tiếp
 
@@ -60,23 +60,23 @@ Các số là **một lần chia** với seed 42. Không cần thuộc hết m�
 
 “Phần hệ chuyên gia gồm các fact và luật được biểu diễn tường minh, rồi có bộ kiểm tra điều kiện và tạo trace. Luật đích hiện có một luật cho Cleveland và hai luật Pima. Hệ còn có một luật phụ Cleveland. Đây là bộ luật nhỏ để học và đối chứng, chưa phải một cơ sở tri thức lâm sàng toàn diện.”
 
-**Hỏi tiếp — “Đây có phải suy diễn tiến nhiều tầng?”** “Hệ duyệt các luật dựa trên fact từ đầu vào. Kết luận của luật chưa trở thành tiền đề của vòng luật kế tiếp.” [Luật đang chạy](../research_rules.py) · [Điểm và trace](../fusion.py)
+**Hỏi tiếp — “Đây có phải suy diễn tiến nhiều tầng?”** “Hệ duyệt các luật dựa trên fact từ đầu vào. Kết luận của luật chưa trở thành tiền đề của vòng luật kế tiếp.” [Luật đang chạy](../../medical_expert/expert/rules.py) · [Điểm và trace](../../medical_expert/expert/fusion.py)
 
 **3. “Bốn bệnh đều có hệ chuyên gia à?”**
 
-“Bốn bộ đều có mô hình ML. Cleveland và Pima có luật đích tham gia gộp. Với ILPD và CKD, hiện chưa có luật đích nên kết quả dùng điểm ML và trace vẫn hiện các chỉ số gốc.” Với ILPD, đơn vị hai chỉ số chưa được xác minh trong hồ sơ nguồn. Với CKD, loại huyết áp và dữ kiện thời gian cần cho bài toán thận mạn chưa đủ rõ trong schema hiện tại. [Hồ sơ luật](T07_RULES.md)
+“Bốn bộ đều có mô hình ML. Cleveland và Pima có luật đích tham gia gộp. Với ILPD và CKD, hiện chưa có luật đích nên kết quả dùng điểm ML và trace vẫn hiện các chỉ số gốc.” Với ILPD, đơn vị hai chỉ số chưa được xác minh trong hồ sơ nguồn. Với CKD, loại huyết áp và dữ kiện thời gian cần cho bài toán thận mạn chưa đủ rõ trong schema hiện tại. [Hồ sơ luật](../tasks/T07_RULES.md)
 
 **4. “Em đóng góp gì? Có dùng AI không?”**
 
-Bạn tự chuẩn bị một câu theo đúng thực tế, theo mẫu “Phần em trực tiếp làm là …, em kiểm chứng bằng …, điểm em có thể mở code giải thích là …”. Nếu có dùng công cụ AI, mô tả trung thực cách dùng và phần mình đã kiểm tra. Thực hành mở fit, predict_proba, evaluate_rules hoặc make_trace và giải thích được một ví dụ cụ thể. [Mô hình NumPy](../math_ml_from_scratch.py) · [Luật](../research_rules.py) · [Gộp](../fusion.py)
+Bạn tự chuẩn bị một câu theo đúng thực tế, theo mẫu “Phần em trực tiếp làm là …, em kiểm chứng bằng …, điểm em có thể mở code giải thích là …”. Nếu có dùng công cụ AI, mô tả trung thực cách dùng và phần mình đã kiểm tra. Thực hành mở fit, predict_proba, evaluate_rules hoặc make_trace và giải thích được một ví dụ cụ thể. [Mô hình NumPy](../../medical_expert/ml/algorithms.py) · [Luật](../../medical_expert/expert/rules.py) · [Gộp](../../medical_expert/expert/fusion.py)
 
 ### Tình huống B · “Dữ liệu này có đáng tin và dùng đúng không?”
 
 **5. “Nhãn dương trong bốn nhóm có cùng nghĩa không?”**
 
-Không. Với Cleveland, mã nguồn num từ 1–4 được gộp thành lớp 1, mã 0 thành lớp 0. Pima dùng tested_positive và tested_negative trong bản OpenML. ILPD ánh xạ Selector 1 thành dương và 2 thành âm. CKD ánh xạ ckd thành dương. Mỗi điểm phải được đọc theo nhãn của bộ tương ứng. [Đặc tả nhãn](SPEC.md)
+Không. Với Cleveland, mã nguồn num từ 1–4 được gộp thành lớp 1, mã 0 thành lớp 0. Pima dùng tested_positive và tested_negative trong bản OpenML. ILPD ánh xạ Selector 1 thành dương và 2 thành âm. CKD ánh xạ ckd thành dương. Mỗi điểm phải được đọc theo nhãn của bộ tương ứng. [Đặc tả nhãn](../SPEC.md)
 
-**Hỏi tiếp về Pima.** Bài báo nguồn mô tả bài toán dự báo khởi phát trong quần thể nghiên cứu. Báo cáo của đồ án gọi tên nhãn của bản OpenML, nêu quần thể nguồn và tránh diễn giải điểm thành chẩn đoán hiện tại hoặc tiên lượng cá nhân. [Hồ sơ Pima](T03_DATA_SOURCES.md) · [Bài báo Smith và cộng sự](https://pmc.ncbi.nlm.nih.gov/articles/PMC2245318/)
+**Hỏi tiếp về Pima.** Bài báo nguồn mô tả bài toán dự báo khởi phát trong quần thể nghiên cứu. Báo cáo của đồ án gọi tên nhãn của bản OpenML, nêu quần thể nguồn và tránh diễn giải điểm thành chẩn đoán hiện tại hoặc tiên lượng cá nhân. [Hồ sơ Pima](../tasks/T03_DATA_SOURCES.md) · [Bài báo Smith và cộng sự](https://pmc.ncbi.nlm.nih.gov/articles/PMC2245318/)
 
 **6. “Vì sao chỉ chọn ba đặc trưng, có chứng minh chúng tối ưu không?”**
 
@@ -84,7 +84,7 @@ Không. Với Cleveland, mã nguồn num từ 1–4 được gộp thành lớp 
 
 **7. “Xóa dòng trùng thì có xóa nhầm hai người giống nhau?”**
 
-“Loader đối chiếu toàn bộ bản ghi nguồn sau chuẩn hóa, gồm nhãn. Nó không gộp những dòng chỉ trùng ba biến đã chọn. ILPD có 583 dòng nguồn, loại 13 dòng trùng toàn bộ còn 570. Tuy vậy, dữ liệu thiếu ID bệnh nhân nên không thể chứng minh mọi dòng giống nhau hoặc khác nhau tương ứng với cùng một người.” [Hồ sơ ILPD](T05_DATA_SOURCES.md)
+“Loader đối chiếu toàn bộ bản ghi nguồn sau chuẩn hóa, gồm nhãn. Nó không gộp những dòng chỉ trùng ba biến đã chọn. ILPD có 583 dòng nguồn, loại 13 dòng trùng toàn bộ còn 570. Tuy vậy, dữ liệu thiếu ID bệnh nhân nên không thể chứng minh mọi dòng giống nhau hoặc khác nhau tương ứng với cùng một người.” [Hồ sơ ILPD](../tasks/T05_DATA_SOURCES.md)
 
 **8. “Không có mã bệnh nhân thì có chắc train và test không trùng người?”**
 
@@ -92,11 +92,11 @@ Không. Với Cleveland, mã nguồn num từ 1–4 được gộp thành lớp 
 
 **9. “Pima glucose = 0 nghĩa là gì? Glucose được đo lúc đói à?”**
 
-“Trong file nguồn, đồ án xem glucose hoặc BMI bằng 0 là giá trị thiếu theo quy ước đã ghi. Còn số lần mang thai bằng 0 là hợp lệ. Trường glucose được mô tả là glucose huyết tương sau hai giờ OGTT. Đơn vị riêng của cột trong bản dùng cho đồ án chưa được xác minh.” [Hồ sơ Pima](T03_DATA_SOURCES.md)
+“Trong file nguồn, đồ án xem glucose hoặc BMI bằng 0 là giá trị thiếu theo quy ước đã ghi. Còn số lần mang thai bằng 0 là hợp lệ. Trường glucose được mô tả là glucose huyết tương sau hai giờ OGTT. Đơn vị riêng của cột trong bản dùng cho đồ án chưa được xác minh.” [Hồ sơ Pima](../tasks/T03_DATA_SOURCES.md)
 
 **10. “Tại sao dữ liệu đã công khai mà không gửi nguyên file Pima cho người khác?”**
 
-“OpenML hiển thị nhãn Public, nhưng hồ sơ dự án chưa xác minh được quyền phân phối lại bản gốc. Em có thể chỉ nguồn, phiên bản và cách đối chiếu file. Khi nộp hay chia sẻ, cần đối chiếu điều khoản dữ liệu trước.” Artifact KNN có ma trận train đã biến đổi, nên vẫn cần xem xét quyền sử dụng và chia sẻ artifact. [Hồ sơ nguồn và điều khoản](T03_DATA_SOURCES.md) · [Hướng dẫn artifact](T06_TRAINING.md)
+“OpenML hiển thị nhãn Public, nhưng hồ sơ dự án chưa xác minh được quyền phân phối lại bản gốc. Em có thể chỉ nguồn, phiên bản và cách đối chiếu file. Khi nộp hay chia sẻ, cần đối chiếu điều khoản dữ liệu trước.” Artifact KNN có ma trận train đã biến đổi, nên vẫn cần xem xét quyền sử dụng và chia sẻ artifact. [Hồ sơ nguồn và điều khoản](../tasks/T03_DATA_SOURCES.md) · [Hướng dẫn artifact](../tasks/T06_TRAINING.md)
 
 ### Tình huống C · “Chia dữ liệu có bị rò rỉ không?”
 
@@ -104,15 +104,15 @@ Không. Với Cleveland, mã nguồn num từ 1–4 được gộp thành lớp 
 
 “Em kiểm tra schema, nhãn, missing và trùng. Sau đó chia phân tầng khoảng 80/20 bằng seed 42 và lưu ID. Trong 80% train, em chạy năm fold. Mỗi lượt học median, mean, độ lệch chuẩn và mô hình từ bốn fold, rồi chấm fold còn lại. Em chọn mô hình theo F1 dương trung bình, fit lại trên toàn bộ train, khóa cấu hình và đánh giá holdout.”
 
-**Hỏi tiếp — “Seed 42 chứng minh mô hình tốt chứ?”** “Seed giúp tái tạo đúng phép chia. Chất lượng vẫn phải xem trên metric và dữ liệu khác. Một seed chưa nói hết biến động.” [Chia và tiền xử lý](T04_DATA_PIPELINE.md) · [Khóa T10](t10_lock.json)
+**Hỏi tiếp — “Seed 42 chứng minh mô hình tốt chứ?”** “Seed giúp tái tạo đúng phép chia. Chất lượng vẫn phải xem trên metric và dữ liệu khác. Một seed chưa nói hết biến động.” [Chia và tiền xử lý](../tasks/T04_DATA_PIPELINE.md) · [Khóa T10](../../manifests/t10_lock.json)
 
 **12. “Tính median trước khi chia thì hại gì?”**
 
-“Khi đó median dùng cả phân bố của phần đem chấm. Mô hình đã nhận thông tin từ phần đánh giá qua bước tiền xử lý. Trong pipeline này, median và scaler được học riêng từ phần train của mỗi fold.” [Mã tiền xử lý](../data_pipeline.py)
+“Khi đó median dùng cả phân bố của phần đem chấm. Mô hình đã nhận thông tin từ phần đánh giá qua bước tiền xử lý. Trong pipeline này, median và scaler được học riêng từ phần train của mỗi fold.” [Mã tiền xử lý](../../medical_expert/data/pipeline.py)
 
 **13. “Kết quả ngoài fold T09 có phải kiểm định độc lập hoàn toàn không?”**
 
-“Mỗi điểm ngoài fold đến từ mô hình của lượt chưa học chính mẫu đó. Tuy nhiên, thuật toán được chọn bằng F1 trên chính năm fold này. Vì vậy bảng T09 phục vụ đối chứng trong giai đoạn phát triển và có thể chịu thiên lệch do chọn mô hình. Holdout T10 được giữ riêng và cấu hình đã khóa trước khi chạy.” [Chọn mô hình](../scripts/train.py) · [Cách lấy điểm T09](../scripts/validate_ablation.py)
+“Mỗi điểm ngoài fold đến từ mô hình của lượt chưa học chính mẫu đó. Tuy nhiên, thuật toán được chọn bằng F1 trên chính năm fold này. Vì vậy bảng T09 phục vụ đối chứng trong giai đoạn phát triển và có thể chịu thiên lệch do chọn mô hình. Holdout T10 được giữ riêng và cấu hình đã khóa trước khi chạy.” [Chọn mô hình](../../scripts/train.py) · [Cách lấy điểm T09](../../scripts/validate_ablation.py)
 
 **14. “Sao không chọn mô hình tốt nhất ngay trên test? Đổi seed có được không?”**
 
@@ -120,7 +120,7 @@ Không. Với Cleveland, mã nguồn num từ 1–4 được gộp thành lớp 
 
 **15. “Các con số CV trên giao diện có phải điểm test không?”**
 
-“Không. Giao diện lấy thống kê từ artifact T06 và ghi rõ 5-fold CV. Ví dụ KNN Pima có F1 CV khoảng 0,666. Sau khi khóa, F1 trên 154 ca holdout là khoảng 0,495.” F1 CV là trung bình F1 của các fold. Các ô TP, TN, FP, FN tổng hợp trong CSV là tổng số đếm từ các fold ngoài mẫu. Hai phép tổng hợp này có thể cho số hơi khác nếu tự tính F1 từ tổng ô. [Huấn luyện T06](T06_TRAINING.md)
+“Không. Giao diện lấy thống kê từ artifact T06 và ghi rõ 5-fold CV. Ví dụ KNN Pima có F1 CV khoảng 0,666. Sau khi khóa, F1 trên 154 ca holdout là khoảng 0,495.” F1 CV là trung bình F1 của các fold. Các ô TP, TN, FP, FN tổng hợp trong CSV là tổng số đếm từ các fold ngoài mẫu. Hai phép tổng hợp này có thể cho số hơi khác nếu tự tính F1 từ tổng ô. [Huấn luyện T06](../tasks/T06_TRAINING.md)
 
 ### Tình huống D · “Em hiểu mô hình tự viết đến đâu?”
 
@@ -128,7 +128,7 @@ Không. Với Cleveland, mã nguồn num từ 1–4 được gộp thành lớp 
 
 “Em biến đổi ba đặc trưng bằng thống kê train, tính khoảng cách Euclid tới các mẫu train đã biến đổi, lấy 7 láng giềng gần nhất. Có 1 láng giềng mang nhãn dương nên điểm là 1/7 ≈ 0,143.”
 
-**Hỏi tiếp — “Sao phải chuẩn hóa?”** “Các biến có thang đo khác nhau. Nếu dùng khoảng cách trên số gốc, biến có độ lớn lớn hơn có thể chi phối khoảng cách. Thống kê chuẩn hóa được học từ train.” Giá trị k = 7 là cấu hình đã khóa, chưa có bằng chứng nó là k tối ưu. [KNN](../math_ml_from_scratch.py) · [Cấu hình](../model_runtime.py)
+**Hỏi tiếp — “Sao phải chuẩn hóa?”** “Các biến có thang đo khác nhau. Nếu dùng khoảng cách trên số gốc, biến có độ lớn lớn hơn có thể chi phối khoảng cách. Thống kê chuẩn hóa được học từ train.” Giá trị k = 7 là cấu hình đã khóa, chưa có bằng chứng nó là k tối ưu. [KNN](../../medical_expert/ml/algorithms.py) · [Cấu hình](../../medical_expert/ml/runtime.py)
 
 **17. “Logistic Regression thực sự học cái gì?”**
 
@@ -144,7 +144,7 @@ Không. Với Cleveland, mã nguồn num từ 1–4 được gộp thành lớp 
 
 “Cây thử từng giá trị đặc trưng làm ngưỡng, tính độ giảm entropy rồi chọn mức giảm lớn nhất. Code tạo hai nhánh theo ngưỡng số, sâu tối đa 4, và cần ít nhất 5 mẫu ở nút để xét tách. Tên giao diện có chữ ID3 vì dùng entropy và information gain. Cách chia nhị phân cho biến số là phần triển khai cụ thể của đồ án.”
 
-Nếu hỏi về nhãn ở lá hòa, trace cây trích xuất ghi lớp 0 theo argmax, trong khi dự đoán từ tỷ lệ dương 0,5 qua ngưỡng ≥ 0,5 cho lớp 1. Phần giải thích cây có nêu quy ước này. [Triển khai cây](../math_ml_from_scratch.py) · [Review](REVIEW.md)
+Nếu hỏi về nhãn ở lá hòa, trace cây trích xuất ghi lớp 0 theo argmax, trong khi dự đoán từ tỷ lệ dương 0,5 qua ngưỡng ≥ 0,5 cho lớp 1. Phần giải thích cây có nêu quy ước này. [Triển khai cây](../../medical_expert/ml/algorithms.py) · [Review](../REVIEW.md)
 
 **20. “Ensemble voting là bầu theo nhãn hay theo điểm?”**
 
@@ -154,7 +154,7 @@ Nếu hỏi về nhãn ở lá hòa, trace cây trích xuất ghi lớp 0 theo a
 
 **21. “Nguồn nào nói tuổi 35–70 và BMI trên 25 đồng nghĩa với mắc bệnh?”**
 
-“Khuyến nghị nguồn dùng tuổi và tình trạng thừa cân để xác định nhóm cần xem xét sàng lọc. Đồ án dùng các điều kiện đó làm luật hỗ trợ để đối chứng với nhãn Pima. Đó là một ánh xạ do đồ án thiết kế, chưa được xác nhận là quy tắc chẩn đoán. Hai CF 0,50 và 0,55 do nhóm đặt cho thí nghiệm.” [Bảng nguồn và CF](T07_RULES.md) · [Khuyến nghị USPSTF](https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/screening-for-prediabetes-and-type-2-diabetes)
+“Khuyến nghị nguồn dùng tuổi và tình trạng thừa cân để xác định nhóm cần xem xét sàng lọc. Đồ án dùng các điều kiện đó làm luật hỗ trợ để đối chứng với nhãn Pima. Đó là một ánh xạ do đồ án thiết kế, chưa được xác nhận là quy tắc chẩn đoán. Hai CF 0,50 và 0,55 do nhóm đặt cho thí nghiệm.” [Bảng nguồn và CF](../tasks/T07_RULES.md) · [Khuyến nghị USPSTF](https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/screening-for-prediabetes-and-type-2-diabetes)
 
 **22. “CF 0,5 là xác suất bác sĩ khẳng định mắc bệnh 50% à?”**
 
@@ -162,11 +162,11 @@ Nếu hỏi về nhãn ở lá hòa, trace cây trích xuất ghi lớp 0 theo a
 
 **23. “Tại BMI 26, vì sao μ = 0,75 mà CF chỉ 0,50?”**
 
-“μ = (26 − 23)/(27 − 23) = 0,75 mô tả mức thuộc của fact BMI cao. Vì μ > 0,5, fact được xem là đúng. Khi toàn bộ điều kiện khớp, bản chạy này dùng CF cố định 0,50 của luật. Nó không nhân 0,75 với CF.” [Fact và luật Pima](../research_rules.py)
+“μ = (26 − 23)/(27 − 23) = 0,75 mô tả mức thuộc của fact BMI cao. Vì μ > 0,5, fact được xem là đúng. Khi toàn bộ điều kiện khớp, bản chạy này dùng CF cố định 0,50 của luật. Nó không nhân 0,75 với CF.” [Fact và luật Pima](../../medical_expert/expert/rules.py)
 
 **24. “Đã dùng fuzzy mà tại sao nhảy đột ngột qua một ngưỡng?”**
 
-“Đồ án tính mức liên thuộc liên tục rồi chuyển thành fact đúng khi μ > 0,5. Luật hoạt động theo fact đúng/sai, nên kết quả có thể thay đổi đột ngột ở biên. Với cholesterol 200, μ = 0,5 và fact chưa đúng. Tại 201, μ = 0,525 và fact đúng. Bản thử này chưa triển khai fuzzy liên tục ở mức kích hoạt luật.” [Quy tắc](T07_RULES.md)
+“Đồ án tính mức liên thuộc liên tục rồi chuyển thành fact đúng khi μ > 0,5. Luật hoạt động theo fact đúng/sai, nên kết quả có thể thay đổi đột ngột ở biên. Với cholesterol 200, μ = 0,5 và fact chưa đúng. Tại 201, μ = 0,525 và fact đúng. Bản thử này chưa triển khai fuzzy liên tục ở mức kích hoạt luật.” [Quy tắc](../tasks/T07_RULES.md)
 
 **25. “Hai luật BMI lồng nhau sao lại cộng cả hai? Các bằng chứng có độc lập không?”**
 
@@ -174,7 +174,7 @@ Nếu hỏi về nhãn ở lá hòa, trace cây trích xuất ghi lớp 0 theo a
 
 **26. “Công thức của em có phải công thức Bayes không?”**
 
-“Đó là quy tắc tích lũy điểm hỗ trợ được chọn cho đối chứng của đồ án. Em chưa có cơ sở để gọi kết quả là xác suất hậu nghiệm Bayes. Cả ML lẫn luật có thể dùng thông tin đầu vào chung, và các CF được đặt thủ công.” [Phép gộp thực thi](../fusion.py)
+“Đó là quy tắc tích lũy điểm hỗ trợ được chọn cho đối chứng của đồ án. Em chưa có cơ sở để gọi kết quả là xác suất hậu nghiệm Bayes. Cả ML lẫn luật có thể dùng thông tin đầu vào chung, và các CF được đặt thủ công.” [Phép gộp thực thi](../../medical_expert/expert/fusion.py)
 
 **27. “Cho hai luật, hãy tính công thức mới và cũ ngay.”**
 
@@ -199,7 +199,7 @@ Ca 4 có p = 5/7, c₁ = 0,50 và c₂ = 0,55.
 
 “Baseline chọn lớp phổ biến trong train của từng fold. Ở cả năm fold Cleveland và Pima, lớp phổ biến là lớp 0, nên baseline đoán âm cho tất cả. F1 lớp dương bằng 0 trên mỗi fold, dẫn tới trung bình 0 và độ lệch chuẩn 0. Với Pima, 214 ca dương ngoài fold đều bị bỏ sót, còn 400 ca âm được đoán đúng.”
 
-**Hỏi tiếp — “Thế precision?”** TP/(TP + FP) có mẫu số bằng 0 vì baseline không dự đoán ca nào là dương. Metric này được để trống và giao diện hiển thị dấu gạch. F1 được tính trực tiếp bằng 2TP/(2TP + FP + FN), có mẫu số dương ở đây nên bằng 0. Accuracy CV trung bình vẫn khoảng 65,15% ở Pima. [Metric CV](../results/t06-cv-seed42/metrics.csv) · [Cách tính](../experiment_metrics.py)
+**Hỏi tiếp — “Thế precision?”** TP/(TP + FP) có mẫu số bằng 0 vì baseline không dự đoán ca nào là dương. Metric này được để trống và giao diện hiển thị dấu gạch. F1 được tính trực tiếp bằng 2TP/(2TP + FP + FN), có mẫu số dương ở đây nên bằng 0. Accuracy CV trung bình vẫn khoảng 65,15% ở Pima. [Metric CV](../../results/t06-cv-seed42/metrics.csv) · [Cách tính](../../medical_expert/ml/metrics.py)
 
 **31. “Hệ kết hợp tốt hơn ML được bao nhiêu?”**
 
@@ -207,7 +207,7 @@ Ca 4 có p = 5/7, c₁ = 0,50 và c₂ = 0,55.
 
 **32. “Recall của luật là 100%, nghĩa là luật phát hiện hết bệnh?”**
 
-“Recall 100% trong bảng chỉ luật được tính trên 50 ca Pima có luật đích khớp, trong đó có 32 dương. Luật gọi dương cả 50, nên tìm đủ 32 ca dương và đồng thời báo dương sai cả 18 ca âm. 104 ca còn lại không có điểm chỉ luật. Coverage là 50/154.” Khi so ML, luật và gộp trong vùng này, cần dùng cùng 50 ca. [Phân tích theo coverage](T12_ERROR_ANALYSIS.md)
+“Recall 100% trong bảng chỉ luật được tính trên 50 ca Pima có luật đích khớp, trong đó có 32 dương. Luật gọi dương cả 50, nên tìm đủ 32 ca dương và đồng thời báo dương sai cả 18 ca âm. 104 ca còn lại không có điểm chỉ luật. Coverage là 50/154.” Khi so ML, luật và gộp trong vùng này, cần dùng cùng 50 ca. [Phân tích theo coverage](../tasks/T12_ERROR_ANALYSIS.md)
 
 **33. “Em nói luật đổi nhiều nhãn, sao lại báo đổi nhãn bằng 0?”**
 
@@ -219,7 +219,7 @@ Ca 4 có p = 5/7, c₁ = 0,50 và c₂ = 0,55.
 
 **35. “Mô hình gan F1 0,834 là tốt rồi, vì sao nói có vấn đề?”**
 
-“ILPD holdout có 81 dương và 33 âm. Nếu đoán dương tất cả thì F1 dương đã là 0,831. Logistic đạt 0,834 nhưng chỉ đoán đúng 5 trong 33 ca âm. F1 dương một mình che bớt khả năng nhận diện lớp âm.” Baseline là mốc đối chứng theo thiết kế chọn mô hình, nên Logistic vẫn được chọn từ năm ứng viên dù baseline có F1 CV cao hơn. [Bảng ML và baseline](T10_HOLDOUT.md) · [Ma trận nhầm lẫn](REVIEW.md)
+“ILPD holdout có 81 dương và 33 âm. Nếu đoán dương tất cả thì F1 dương đã là 0,831. Logistic đạt 0,834 nhưng chỉ đoán đúng 5 trong 33 ca âm. F1 dương một mình che bớt khả năng nhận diện lớp âm.” Baseline là mốc đối chứng theo thiết kế chọn mô hình, nên Logistic vẫn được chọn từ năm ứng viên dù baseline có F1 CV cao hơn. [Bảng ML và baseline](../tasks/T10_HOLDOUT.md) · [Ma trận nhầm lẫn](../REVIEW.md)
 
 **36. “Thêm luật làm F1 tăng. Vậy đã chứng minh luật hiệu quả chưa?”**
 
@@ -245,23 +245,23 @@ Các thao tác dưới đây đã được kiểm tra trên giao diện ngày 22
 | Ứng dụng báo chưa có mô hình | Kiểm tra thư mục artifact và MEDICAL_MODEL_RUN, sau đó khởi động lại. Nếu không kịp, mở ảnh ca mẫu và bảng kết quả đã chuẩn bị, nói rõ đó là kết quả lưu trước. |
 | Không nhớ một công thức hoặc một con số | Mở mục tương ứng trong sổ tay hoặc code, nói phần mình chắc chắn. Có thể trình bày cách kiểm tra ngay tại chỗ. |
 
-Đã kiểm tra giao diện ca 5 trên trình duyệt với server cục bộ, artifact T06 và SQLite tạm. Các ảnh trong tài liệu T13 được chụp ở lần demo trước và có thể khác bố cục giao diện hiện tại. [Sáu ca và ảnh](T13_DEMO.md) · [Hạn chế CKD](REVIEW.md) · [Cấu hình form](../diseases_config.py)
+Đã kiểm tra giao diện ca 5 trên trình duyệt với server cục bộ, artifact T06 và SQLite tạm. Các ảnh trong tài liệu T13 được chụp ở lần demo trước và có thể khác bố cục giao diện hiện tại. [Sáu ca và ảnh](../tasks/T13_DEMO.md) · [Hạn chế CKD](../REVIEW.md) · [Cấu hình form](../../medical_expert/web/diseases.py)
 
 ## 4. Bản đồ mở bằng chứng trong 10 giây
 
 | Giảng viên muốn xem | Mở file | Từ khóa để tìm |
 |---|---|---|
-| API nhận dữ liệu và validate | [app.py](../app.py) | diagnose, validate_diagnosis_fields |
-| Tách fold và học median/scaler | [data_pipeline.py](../data_pipeline.py) | make_manifest, fit_preprocessor, prepare_fold |
-| KNN, Logistic, NB, cây, ensemble | [math_ml_from_scratch.py](../math_ml_from_scratch.py) | Tên class, fit, predict_proba |
-| Chọn mô hình và tổng hợp CV | [scripts/train.py](../scripts/train.py) | train_dataset, selected |
-| Fact và luật thực sự chạy | [research_rules.py](../research_rules.py) | FACTS, RULES, evaluate_rules |
-| Cách gộp và trace | [fusion.py](../fusion.py) | fusion_scores, make_trace |
-| Khóa trước test | [t10_lock.json](t10_lock.json) | selected, threshold, method_sha256 |
-| Số liệu holdout | [T10_HOLDOUT.md](T10_HOLDOUT.md), [metrics.csv](../results/t10-test-seed42/metrics.csv) | Tên bộ, f1, tn, fp, fn, tp |
-| Đổi đúng và đổi sai | [T12_ERROR_ANALYSIS.md](T12_ERROR_ANALYSIS.md) | Pima, FP, FN |
+| API nhận dữ liệu và validate | [medical_expert/web/app.py](../../medical_expert/web/app.py) | diagnose, validate_diagnosis_fields |
+| Tách fold và học median/scaler | [medical_expert/data/pipeline.py](../../medical_expert/data/pipeline.py) | make_manifest, fit_preprocessor, prepare_fold |
+| KNN, Logistic, NB, cây, ensemble | [medical_expert/ml/algorithms.py](../../medical_expert/ml/algorithms.py) | Tên class, fit, predict_proba |
+| Chọn mô hình và tổng hợp CV | [scripts/train.py](../../scripts/train.py) | train_dataset, selected |
+| Fact và luật thực sự chạy | [medical_expert/expert/rules.py](../../medical_expert/expert/rules.py) | FACTS, RULES, evaluate_rules |
+| Cách gộp và trace | [medical_expert/expert/fusion.py](../../medical_expert/expert/fusion.py) | fusion_scores, make_trace |
+| Khóa trước test | [t10_lock.json](../../manifests/t10_lock.json) | selected, threshold, method_sha256 |
+| Số liệu holdout | [T10_HOLDOUT.md](../tasks/T10_HOLDOUT.md), [metrics.csv](../../results/t10-test-seed42/metrics.csv) | Tên bộ, f1, tn, fp, fn, tp |
+| Đổi đúng và đổi sai | [T12_ERROR_ANALYSIS.md](../tasks/T12_ERROR_ANALYSIS.md) | Pima, FP, FN |
 
-Trong đợt chuẩn bị này, 17 file phương pháp được liệt kê trong khóa T10 và artifact models.json hiện có đều khớp SHA-256 đã khóa. Đối chiếu hash cho biết nội dung hiện tại khớp bản ghi khóa, còn kết luận về kết quả cần đọc cùng giao thức và số liệu. [Khóa T10](t10_lock.json)
+Trong đợt chuẩn bị này, 17 file phương pháp được liệt kê trong khóa T10 và artifact models.json hiện có đều khớp SHA-256 đã khóa. Đối chiếu hash cho biết nội dung hiện tại khớp bản ghi khóa, còn kết luận về kết quả cần đọc cùng giao thức và số liệu. [Khóa T10](../../manifests/t10_lock.json)
 
 ## 5. Kế hoạch tự luyện trước buổi bảo vệ
 
@@ -289,4 +289,4 @@ Nếu có khoảng hai giờ, thực hiện theo thứ tự sau. Nếu ít thờ
 
 Tập lần lượt câu trả lời 20 giây, rồi câu trả lời 60 giây có mở bằng chứng. Với câu 4, 5 và 6, hãy giải thích cả mẫu số và tập dữ liệu đang nói tới.
 
-[Sổ tay tính toán và kịch bản gốc](GHI_CHU_BAO_VE.md) · [Đặc tả dự án](SPEC.md) · [Trạng thái và giới hạn](STATUS.md)
+[Sổ tay tính toán và kịch bản gốc](GHI_CHU_BAO_VE.md) · [Đặc tả dự án](../SPEC.md) · [Trạng thái và giới hạn](../STATUS.md)

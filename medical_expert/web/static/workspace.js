@@ -468,7 +468,7 @@ function findFactSpec(dataset, factKey) {
     return null;
 }
 
-// Preview the same target-rule conditions shown in research_rules.py; the API
+// Preview the same target-rule conditions shown in medical_expert/expert/rules.py; the API
 // remains the source of the actual inference result.
 const TARGET_RULE_CONDS = {
     cleveland: [["age_at_least_55", "chol_elevated"]],

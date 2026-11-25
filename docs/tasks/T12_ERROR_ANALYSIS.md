@@ -1,6 +1,6 @@
 # T12 · Phân tích lỗi và hệ số Logistic Regression
 
-Phân tích dùng đầu ra holdout của lượt khóa `t10-test-seed42`, với ngưỡng 0,5. Gaussian NB cho Cleveland và KNN cho Pima được chọn từ CV. Các ID tham chiếu dòng có `experiment=ablation`. [Metadata](../results/t10-test-seed42/metadata.json) · [Metric](../results/t10-test-seed42/metrics.csv) · [Dự đoán](../results/t10-test-seed42/predictions.csv)
+Phân tích dùng đầu ra holdout của lượt khóa `t10-test-seed42`, với ngưỡng 0,5. Gaussian NB cho Cleveland và KNN cho Pima được chọn từ CV. Các ID tham chiếu dòng có `experiment=ablation`. [Metadata](../../results/t10-test-seed42/metadata.json) · [Metric](../../results/t10-test-seed42/metrics.csv) · [Dự đoán](../../results/t10-test-seed42/predictions.csv)
 
 | Bộ dữ liệu | ML sai trên toàn bộ test | Luật bao phủ | Luật sai trong vùng bao phủ | ML và luật bất đồng trong vùng bao phủ |
 |---|---:|---:|---:|---:|
@@ -29,4 +29,4 @@ Các số đo mô tả một lần chia dữ liệu. Phân tích từng ca chỉ
 
 ![Biểu đồ hệ số Logistic Regression Cleveland và Pima](t12_logistic_coefficients.svg)
 
-Hệ số lấy từ Logistic Regression fit lại trên toàn bộ phần train của từng bộ. Khi giữ cố định các đặc trưng khác, hệ số là mức thay đổi log-odds lớp dương khi đặc trưng tăng một độ lệch chuẩn của train. Với Pima, hệ số của `glucose` là +1,136, tương ứng odds lớp dương nhân khoảng 3,12 trong mô hình Logistic Regression. Các ca lỗi phía trên dùng Gaussian NB hoặc KNN. [Trạng thái mô hình T06](../results/t06-cv-seed42/models.json)
+Hệ số lấy từ Logistic Regression fit lại trên toàn bộ phần train của từng bộ. Khi giữ cố định các đặc trưng khác, hệ số là mức thay đổi log-odds lớp dương khi đặc trưng tăng một độ lệch chuẩn của train. Với Pima, hệ số của `glucose` là +1,136, tương ứng odds lớp dương nhân khoảng 3,12 trong mô hình Logistic Regression. Các ca lỗi phía trên dùng Gaussian NB hoặc KNN. [Trạng thái mô hình T06](../../results/t06-cv-seed42/models.json)

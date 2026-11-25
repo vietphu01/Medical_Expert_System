@@ -6,9 +6,9 @@ from pathlib import Path
 
 import numpy as np
 
-from data_pipeline import Preprocessor
-from dataset_loaders import Sample
-from math_ml_from_scratch import (
+from medical_expert.data.pipeline import Preprocessor
+from medical_expert.data.loaders import Sample
+from medical_expert.ml.algorithms import (
     DecisionTreeScratch, EnsembleVotingScratch, GaussianNBScratch,
     KNNScratch, LogisticRegressionScratch,
 )

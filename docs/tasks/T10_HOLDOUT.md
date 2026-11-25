@@ -1,6 +1,6 @@
 # Kết quả đánh giá holdout đã khóa
 
-Run `t10-test-seed42` dùng [cấu hình đã commit trước đánh giá](t10_lock.json) và mô hình T06 fit trên train. Chọn mô hình theo F1 validation trước khi chạy. Các giá trị dưới đây lấy từ `results/t10-test-seed42/metrics.csv`.
+Run `t10-test-seed42` dùng [cấu hình đã commit trước đánh giá](../../manifests/t10_lock.json) và mô hình T06 fit trên train. Chọn mô hình theo F1 validation trước khi chạy. Các giá trị dưới đây lấy từ `results/t10-test-seed42/metrics.csv`.
 
 | Bộ | Mẫu holdout | Mô hình đã chọn | F1 | ROC-AUC | F1 baseline |
 |---|---:|---|---:|---:|---:|

@@ -14,7 +14,7 @@ Mốc ngày 3 phục vụ người đã có một số chỉ số trên phiếu 
 
 ## Hợp đồng dữ liệu ứng dụng
 
-**Suy luận.** Dùng `GET /api/diseases` để đọc schema và `POST /api/diagnose` với `disease`, `inputs`, tùy chọn `extra_facts` theo [API hiện có](../../app.py). Ví dụ hợp lệ là `{"disease":"diabetes","inputs":{"glucose":90,"bmi":26,"age":45}}`. Truyền đủ khóa, dùng `null` cho trường chủ động để trống. Form và trợ lý đọc `trace.ml`, `trace.facts`, `trace.fired_rules`, `trace.result` trên thang 0–1. Đầu vào lỗi trả 400 và lỗi theo trường, thiếu mô hình trả 503. Đồ thị và lời giải thích dùng cùng trace.
+**Suy luận.** Dùng `GET /api/diseases` để đọc schema và `POST /api/diagnose` với `disease`, `inputs`, tùy chọn `extra_facts` theo [API hiện có](../../medical_expert/web/app.py). Ví dụ hợp lệ là `{"disease":"diabetes","inputs":{"glucose":90,"bmi":26,"age":45}}`. Truyền đủ khóa, dùng `null` cho trường chủ động để trống. Form và trợ lý đọc `trace.ml`, `trace.facts`, `trace.fired_rules`, `trace.result` trên thang 0–1. Đầu vào lỗi trả 400 và lỗi theo trường, thiếu mô hình trả 503. Đồ thị và lời giải thích dùng cùng trace.
 
 **Đặt lịch.** Giờ bắt đầu dùng ISO 8601 kèm múi giờ. Cơ sở dữ liệu lưu chuyên gia mẫu, khung giờ và lịch hẹn. Mỗi cặp chuyên gia và giờ bắt đầu là duy nhất, mỗi khung giờ có nhiều nhất một lịch hẹn. Bản demo chỉ cần mã hẹn để tra cứu, không cần thu thông tin sức khỏe hay thông tin liên lạc cho việc đặt lịch.
 
@@ -33,13 +33,13 @@ Mã hẹn được tạo ở máy chủ và là duy nhất. Ghi lịch trong m�
 
 | Thành phần | Quy ước dùng cho cả hai cấu hình |
 |---|---|
-| Nguồn và nhãn | Tệp `processed.cleveland.data` đúng SHA-256 ghi trong [khóa T10](../t10_lock.json). Cột đích `num` bằng 0 cho nhãn âm, 1–4 cho nhãn dương. Bảo toàn ID dòng nguồn theo loader V1. |
+| Nguồn và nhãn | Tệp `processed.cleveland.data` đúng SHA-256 ghi trong [khóa T10](../../manifests/t10_lock.json). Cột đích `num` bằng 0 cho nhãn âm, 1–4 cho nhãn dương. Bảo toàn ID dòng nguồn theo loader V1. |
 | Đầu vào | A gồm `age, bp, chol` theo đúng thứ tự V1. B gồm `age, bp, chol, thalach`. Chỉ khác cột cuối. `bp` lấy từ `trestbps`. |
-| Tập phát triển | Chỉ 242 ID trong `cleveland.train_ids` của [manifest T04](../t04_split_manifest.json), seed 42, cùng 5 fold đã lưu. Giới hạn EDA, fit và dự đoán vào phần train này. Holdout T10 dành cho kết quả đã công bố của V1. |
+| Tập phát triển | Chỉ 242 ID trong `cleveland.train_ids` của [manifest T04](../../manifests/t04_split_manifest.json), seed 42, cùng 5 fold đã lưu. Giới hạn EDA, fit và dự đoán vào phần train này. Holdout T10 dành cho kết quả đã công bố của V1. |
 | Tiền xử lý và mô hình | Trong từng fold, học trung vị và chuẩn hóa trên phần huấn luyện rồi áp dụng lên validation. Dùng cùng Gaussian NB NumPy và ngưỡng nhãn ≥ 0,5. Đánh giá riêng điểm ML để đo tác động của đặc trưng. |
 | Chỉ tiêu | Chính là F1 lớp dương trung bình qua 5 fold. Báo F1 của A và B trong từng fold, độ lệch chuẩn theo quy ước V1, chênh lệch B trừ A theo cặp, recall, FP và FN. FP/FN toàn bộ là tổng trên các dự đoán ngoài fold, mỗi ID xuất hiện đúng một lần cho mỗi cấu hình. |
 
-Đầu tiên đối chiếu F1 từng fold của A với CSV của V1 và mốc trung bình **0,5868464868** (0,5868 khi trình bày). Nếu lệch quá sai số làm tròn, kiểm tra ID, thứ tự cột và tiền xử lý trước khi diễn giải B. Chấp nhận kết quả tăng, giảm hoặc khác chiều giữa các fold. Kết luận chỉ áp dụng cho đánh giá phát triển trên train/CV. Muốn đưa ứng viên vào luồng suy luận cần đánh giá độc lập ở vòng sau. [Kết quả tham chiếu](../T06_TRAINING.md)
+Đầu tiên đối chiếu F1 từng fold của A với CSV của V1 và mốc trung bình **0,5868464868** (0,5868 khi trình bày). Nếu lệch quá sai số làm tròn, kiểm tra ID, thứ tự cột và tiền xử lý trước khi diễn giải B. Chấp nhận kết quả tăng, giảm hoặc khác chiều giữa các fold. Kết luận chỉ áp dụng cho đánh giá phát triển trên train/CV. Muốn đưa ứng viên vào luồng suy luận cần đánh giá độc lập ở vòng sau. [Kết quả tham chiếu](../tasks/T06_TRAINING.md)
 
 Ghi run riêng trong `results/<run_id_v2>/` với `metadata.json`, `metrics.csv`, `predictions.csv` theo [định dạng V1](../SPEC.md). Metadata ghi hai schema, cấu hình, ngưỡng, seed, phiên bản nguồn, checksum, manifest và cách tái tạo. CSV phân biệt A/B qua `variant` và ghi số fold trong `split`. Bảng dự đoán có 484 dòng dữ liệu ngoài fold (242 × 2). Số này là tiêu chí nghiệm thu.
 

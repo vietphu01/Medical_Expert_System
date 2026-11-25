@@ -32,9 +32,9 @@
 ## Sau bàn giao · Review và GUI
 
 - [x] Rà soát dữ liệu, mô hình, luật, kết quả và ứng dụng. Bàn giao [đánh giá cùng ba bài tự cải thiện](REVIEW.md), GUI ngoại tuyến và sáu ảnh demo mới. [Bằng chứng nghiệm thu](STATUS.md)
-- [x] Bàn giao [báo cáo dự án từ A đến Z](BAO_CAO_DU_AN.md), gồm tiến trình phát triển, kiến trúc, luồng suy luận, cách vận hành và kết quả thực nghiệm có nguồn đối chiếu.
-- [x] Bàn giao [sổ tay bảo vệ](GHI_CHU_BAO_VE.md) với lời đáp cho câu hỏi kỹ thuật, phép tính ca Pima, số liệu đối chứng và kịch bản cầm máy 5–7 phút.
-- [x] Chuẩn bị [bộ câu hỏi vấn đáp khó và chiến lược bảo vệ](VAN_DAP_BAO_VE.md), cập nhật thao tác demo theo giao diện hiện có.
+- [x] Bàn giao [báo cáo dự án từ A đến Z](reports/BAO_CAO_DU_AN.md), gồm tiến trình phát triển, kiến trúc, luồng suy luận, cách vận hành và kết quả thực nghiệm có nguồn đối chiếu.
+- [x] Bàn giao [sổ tay bảo vệ](reports/GHI_CHU_BAO_VE.md) với lời đáp cho câu hỏi kỹ thuật, phép tính ca Pima, số liệu đối chứng và kịch bản cầm máy 5–7 phút.
+- [x] Chuẩn bị [bộ câu hỏi vấn đáp khó và chiến lược bảo vệ](reports/VAN_DAP_BAO_VE.md), cập nhật thao tác demo theo giao diện hiện có.
 - [x] Tinh gọn màn hình suy luận: chọn ca theo nhu cầu, hiện hai điểm và lời giải thích theo từng mức, báo lỗi tại ô nhập và cảnh báo kết quả cũ. [Bằng chứng kiểm tra](STATUS.md)
 - [x] Khôi phục khung chờ suy luận theo video: sơ đồ chuyển động, bản xem trước đồng hồ và các thanh, trạng thái đầu vào và nút chạy; phân biệt rõ phần minh họa với kết quả thực. [Bằng chứng kiểm tra](STATUS.md)
 - [x] Khôi phục khung kết quả sinh động sau suy luận: đồng hồ, thanh so sánh và sơ đồ dùng điểm thực; trường hợp không có luật đích được ghi rõ. [Bằng chứng kiểm tra](STATUS.md)

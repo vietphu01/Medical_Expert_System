@@ -1,6 +1,5 @@
 import importlib.util
 import os
-import shutil
 import sqlite3
 import unittest
 from contextlib import chdir, closing
@@ -17,10 +16,9 @@ class HistoryTests(unittest.TestCase):
     def setUpClass(cls):
         cls.directory = Path(cls.enterClassContext(TemporaryDirectory()))
         cls.startup_db = cls.directory / 'startup.db'
-        shutil.copyfile(ROOT / 'knowledge_base.json', cls.directory / 'knowledge_base.json')
 
         # Cô lập import và cả đường dẫn tương đối nếu app dùng DB mặc định.
-        spec = importlib.util.spec_from_file_location('history_test_app', ROOT / 'app.py')
+        spec = importlib.util.spec_from_file_location('history_test_app', ROOT / 'medical_expert/web/app.py')
         cls.module = importlib.util.module_from_spec(spec)
         with chdir(cls.directory), patch.dict(os.environ, MEDICAL_HISTORY_DB=str(cls.startup_db)):
             spec.loader.exec_module(cls.module)
@@ -35,12 +33,12 @@ class HistoryTests(unittest.TestCase):
                 if content is not None:
                     run_dir.mkdir(exist_ok=True)
                     (run_dir / 'models.json').write_text(content, encoding='utf-8')
-                spec = importlib.util.spec_from_file_location('unavailable_test_app', ROOT / 'app.py')
+                spec = importlib.util.spec_from_file_location('unavailable_test_app', ROOT / 'medical_expert/web/app.py')
                 module = importlib.util.module_from_spec(spec)
                 with patch.dict(os.environ, MEDICAL_HISTORY_DB=str(self.directory / 'unavailable.db'),
                                 MEDICAL_MODEL_RUN=str(run_dir)):
                     spec.loader.exec_module(module)
-                module.app.template_folder = str(ROOT / 'templates')
+                module.app.template_folder = str(ROOT / 'medical_expert/web/templates')
                 client = module.app.test_client()
                 page = client.get('/')
                 self.assertEqual(page.status_code, 200)

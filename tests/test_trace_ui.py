@@ -5,7 +5,7 @@ import subprocess
 import unittest
 from pathlib import Path
 
-from research_rules import evaluate_rules
+from medical_expert.expert.rules import evaluate_rules
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,7 +32,7 @@ vm.runInContext(fs.readFileSync(process.argv[1], 'utf8'), context);
 const cases = JSON.parse(fs.readFileSync(0, 'utf8'));
 process.stdout.write(JSON.stringify(cases.map(item => context.previewTargetRules(item.dataset, item.inputs))));
 """
-        output = subprocess.run(['node', '-e', harness, str(ROOT / 'static/workspace.js')],
+        output = subprocess.run(['node', '-e', harness, str(ROOT / 'medical_expert/web/static/workspace.js')],
                                 input=json.dumps(cases), check=True, capture_output=True, text=True)
         previews = json.loads(output.stdout)
         for case, preview in zip(cases, previews):
@@ -101,7 +101,7 @@ const onlyMl = find(nodes.traceResult, el => el.className === 'compare-strip');
 assert.match(contents(onlyMl), /Bộ dữ liệu chưa có luật đích/);
 assert.doesNotMatch(contents(onlyMl), /Kết hợp/);
 """
-        subprocess.run(['node', '-e', harness, str(ROOT / 'static/workspace.js')],
+        subprocess.run(['node', '-e', harness, str(ROOT / 'medical_expert/web/static/workspace.js')],
                        check=True, capture_output=True, text=True)
 
     def test_trace_rendering_treats_text_as_text_and_shows_unknown(self):
@@ -160,7 +160,7 @@ trace.result.combined_score = 1;
 context.renderTrace(trace, disease);
 assert.doesNotMatch(contents(nodes.traceResult), /nâng điểm kết hợp/);
 """
-        subprocess.run(['node', '-e', harness, str(ROOT / 'static/workspace.js')],
+        subprocess.run(['node', '-e', harness, str(ROOT / 'medical_expert/web/static/workspace.js')],
                        check=True, capture_output=True, text=True)
 
     def test_outdated_responses_cannot_replace_current_inputs_or_newer_results(self):
@@ -221,5 +221,5 @@ const response = id => ({trace:{id, result:{combined_score:0.5}}});
     assert.equal(nodes.staleNotice.hidden, true);
 })().catch(error => { console.error(error); process.exitCode = 1; });
 """
-        subprocess.run(['node', '-e', harness, str(ROOT / 'static/workspace.js')],
+        subprocess.run(['node', '-e', harness, str(ROOT / 'medical_expert/web/static/workspace.js')],
                        check=True, capture_output=True, text=True)

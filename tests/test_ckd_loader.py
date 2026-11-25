@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from ckd_loader import CKD_COLUMNS, CKD_SOURCE, load_ckd
+from medical_expert.data.ckd import CKD_COLUMNS, CKD_SOURCE, load_ckd
 
 
 class CKDLoaderTests(unittest.TestCase):

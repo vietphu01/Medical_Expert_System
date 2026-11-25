@@ -1,6 +1,6 @@
 # Xác minh Cleveland và Pima
 
-Đối chiếu nguồn ngày 18/11/2026. Hai tệp chính thức được đọc trong thư mục tạm. Repo lưu loader, fixture tự tạo và thống kê tổng hợp. [Metadata JSON](t03_dataset_metadata.json)
+Đối chiếu nguồn ngày 18/11/2026. Hai tệp chính thức được đọc trong thư mục tạm. Repo lưu loader, fixture tự tạo và thống kê tổng hợp. [Metadata JSON](../../manifests/t03_dataset_metadata.json)
 
 ## Cleveland
 

@@ -3,7 +3,7 @@
 import json
 import unittest
 
-from fusion import fusion_scores, make_trace
+from medical_expert.expert.fusion import fusion_scores, make_trace
 
 
 def fired_rule(rule_id, target, cf):

@@ -15,7 +15,7 @@
 | Trợ lý hội thoại | Hội thoại có hướng dẫn bằng tiếng Việt, giải thích chỉ số từ nội dung đã duyệt, thu các trường, gọi core hiện có hoặc tra giờ trống và đặt lịch sau xác nhận | Ngày 4 nếu luồng trực tiếp đã đạt |
 | Mở rộng sau đợt này | Lịch thật của phòng khám, chatbot tư vấn y khoa tự do, tích hợp MySQL hoặc đánh giá mô hình mới trên quần thể độc lập đều cần thêm điều kiện và thời gian riêng | Sau demo |
 
-**Căn cứ hiện tại.** Bốn bộ dữ liệu có mô hình tự viết bằng NumPy. Cleveland và Pima có luật đích để làm đối chứng, còn gan và thận đang dùng ML. Website đã có form, đồ thị minh họa, giải thích từng bước và lịch sử SQLite. Ngày 25/11, 50/50 kiểm thử chạy đạt trên DB tạm, mã phương pháp và tệp mô hình khớp khóa T10. Môi trường của repo hiện thiếu pandas và Matplotlib. Các điểm dưới đây lấy từ kết quả đã lưu của phiên bản ban đầu (V1). [Đặc tả](SPEC.md) · [Kết quả CV](T06_TRAINING.md) · [Đánh giá V1](REVIEW.md)
+**Căn cứ hiện tại.** Bốn bộ dữ liệu có mô hình tự viết bằng NumPy. Cleveland và Pima có luật đích để làm đối chứng, còn gan và thận đang dùng ML. Website đã có form, đồ thị minh họa, giải thích từng bước và lịch sử SQLite. Ngày 25/11, 50/50 kiểm thử chạy đạt trên DB tạm, mã phương pháp và tệp mô hình khớp khóa T10. Môi trường của repo hiện thiếu pandas và Matplotlib. Các điểm dưới đây lấy từ kết quả đã lưu của phiên bản ban đầu (V1). [Đặc tả](../SPEC.md) · [Kết quả CV](../tasks/T06_TRAINING.md) · [Đánh giá V1](../REVIEW.md)
 
 ## Mỗi học phần nhìn thấy điều gì
 
@@ -29,11 +29,11 @@ Website là lựa chọn nền tảng cho yêu cầu GUI. Part 1 của Chapter 6
 
 ## Câu chuyện bảo vệ core hiện tại
 
-1. **Từ nhu cầu tới nhãn.** Chọn Pima để kể trọn một ví dụ. Mỗi dòng tương ứng một quan sát, nhãn là kết quả dương hoặc âm trong bộ dữ liệu. V1 dùng glucose hai giờ trong nghiệm pháp dung nạp glucose, BMI và tuổi. Quần thể nguồn gồm phụ nữ gốc Pima từ 21 tuổi. Điều này giới hạn suy rộng sang người dùng website. [Đặc tả dữ liệu](SPEC.md)
-2. **Từ dữ liệu tới thử nghiệm.** Cho xem bảng số mẫu theo nhãn và số ô thiếu trên train. Giải thích vì sao số 0 ở glucose và BMI được xử lý là thiếu, còn 0 lần mang thai có nghĩa. Chia phân tầng 80/20 và dùng 5 fold trong phần train. Trung vị và tham số chuẩn hóa được học lại bằng phần huấn luyện của từng fold để đánh giá trên những mẫu chưa tham gia fit. [Pipeline](T04_DATA_PIPELINE.md)
-3. **Từ thử nghiệm tới quyết định.** Baseline Pima luôn chọn âm nên F1 lớp dương bằng 0. Trên cùng 5 fold, F1 dương trung bình của KNN là 0,6655, cây quyết định 0,6552 và Logistic Regression 0,6289. KNN được chọn theo tiêu chí F1 đã đặt. Minh họa cơ chế bằng bảy hàng xóm gần nhất trong không gian đã chuẩn hóa. Chênh lệch nhỏ với cây giúp giải thích vì sao cần ghi cả độ dao động giữa các fold. [Metric CV](../results/t06-cv-seed42/metrics.csv) · [Huấn luyện](T06_TRAINING.md)
-4. **Từ mô hình tới lời giải thích.** Với ca tự tạo tuổi 45, glucose OGTT 90 và BMI 26, có một trong bảy hàng xóm thuộc lớp dương. KNN cho 1/7, luật theo tuổi và BMI cho 0,50. Tính tay được 0,50 + (1/7) × (1 − 0,50) ≈ 0,5714. Phần trăm trên giao diện biểu diễn điểm hỗ trợ cho nhãn của bộ dữ liệu. [Ca demo 5](T13_DEMO.md)
-5. **Từ kết quả tới giới hạn.** Trên 154 ca test Pima đã khóa, F1 từ 0,495 lên 0,640 khi thêm luật. Số ca dương bị bỏ sót giảm từ 30 còn 14, còn số ca âm bị báo dương tăng từ 19 lên 31. Luật khớp ở 50/154 ca. Tách riêng phép so sánh hai công thức gộp cũ và mới thì số ca đổi nhãn bằng 0. Người trình bày cần giải thích được cả hai phép so sánh. [Đánh giá](REVIEW.md) · [Phân tích lỗi](T12_ERROR_ANALYSIS.md)
+1. **Từ nhu cầu tới nhãn.** Chọn Pima để kể trọn một ví dụ. Mỗi dòng tương ứng một quan sát, nhãn là kết quả dương hoặc âm trong bộ dữ liệu. V1 dùng glucose hai giờ trong nghiệm pháp dung nạp glucose, BMI và tuổi. Quần thể nguồn gồm phụ nữ gốc Pima từ 21 tuổi. Điều này giới hạn suy rộng sang người dùng website. [Đặc tả dữ liệu](../SPEC.md)
+2. **Từ dữ liệu tới thử nghiệm.** Cho xem bảng số mẫu theo nhãn và số ô thiếu trên train. Giải thích vì sao số 0 ở glucose và BMI được xử lý là thiếu, còn 0 lần mang thai có nghĩa. Chia phân tầng 80/20 và dùng 5 fold trong phần train. Trung vị và tham số chuẩn hóa được học lại bằng phần huấn luyện của từng fold để đánh giá trên những mẫu chưa tham gia fit. [Pipeline](../tasks/T04_DATA_PIPELINE.md)
+3. **Từ thử nghiệm tới quyết định.** Baseline Pima luôn chọn âm nên F1 lớp dương bằng 0. Trên cùng 5 fold, F1 dương trung bình của KNN là 0,6655, cây quyết định 0,6552 và Logistic Regression 0,6289. KNN được chọn theo tiêu chí F1 đã đặt. Minh họa cơ chế bằng bảy hàng xóm gần nhất trong không gian đã chuẩn hóa. Chênh lệch nhỏ với cây giúp giải thích vì sao cần ghi cả độ dao động giữa các fold. [Metric CV](../../results/t06-cv-seed42/metrics.csv) · [Huấn luyện](../tasks/T06_TRAINING.md)
+4. **Từ mô hình tới lời giải thích.** Với ca tự tạo tuổi 45, glucose OGTT 90 và BMI 26, có một trong bảy hàng xóm thuộc lớp dương. KNN cho 1/7, luật theo tuổi và BMI cho 0,50. Tính tay được 0,50 + (1/7) × (1 − 0,50) ≈ 0,5714. Phần trăm trên giao diện biểu diễn điểm hỗ trợ cho nhãn của bộ dữ liệu. [Ca demo 5](../tasks/T13_DEMO.md)
+5. **Từ kết quả tới giới hạn.** Trên 154 ca test Pima đã khóa, F1 từ 0,495 lên 0,640 khi thêm luật. Số ca dương bị bỏ sót giảm từ 30 còn 14, còn số ca âm bị báo dương tăng từ 19 lên 31. Luật khớp ở 50/154 ca. Tách riêng phép so sánh hai công thức gộp cũ và mới thì số ca đổi nhãn bằng 0. Người trình bày cần giải thích được cả hai phép so sánh. [Đánh giá](../REVIEW.md) · [Phân tích lỗi](../tasks/T12_ERROR_ANALYSIS.md)
 
 ## Thí nghiệm mở rộng core
 
@@ -46,7 +46,7 @@ Website là lựa chọn nền tảng cho yêu cầu GUI. Part 1 của Chapter 6
 | Đọc kết quả | Xuất số liệu mỗi fold, F1 trung bình và độ lệch chuẩn, chênh lệch B trừ A theo cặp, recall, số dương giả và âm giả từ dự đoán ngoài fold. Vẽ một hình nối A với B trong từng fold. Ghi kết luận cả khi kết quả giảm hoặc thay đổi thiếu nhất quán. |
 | Quyết định vòng tiếp | Kết quả trong đợt này là bằng chứng phát triển trên train/CV. Nếu tín hiệu nhất quán và đầu vào khả dụng, khóa ứng viên rồi lập kế hoạch đánh giá trên dữ liệu độc lập phù hợp trước khi đề xuất dùng trên website. Nếu tín hiệu yếu, ghi điều đã học và xem lại chi phí thu thập đặc trưng. |
 
-Holdout T10 đã được xem sau khi khóa V1 và chỉ dùng để trình bày kết quả của V1. V2 sử dụng 242 ID thuộc phần train, giữ seed 42 và ghi vào thư mục kết quả riêng. Nếu hết ngày 1 chưa có đúng tệp Cleveland, vẫn hoàn thành phần vấn đáp và biểu đồ bằng kết quả CV đã xuất, ghi thí nghiệm 4 biến là việc đang chờ dữ liệu. [Khóa V1](t10_lock.json) · [Quy trình dự án](../AGENTS.md)
+Holdout T10 đã được xem sau khi khóa V1 và chỉ dùng để trình bày kết quả của V1. V2 sử dụng 242 ID thuộc phần train, giữ seed 42 và ghi vào thư mục kết quả riêng. Nếu hết ngày 1 chưa có đúng tệp Cleveland, vẫn hoàn thành phần vấn đáp và biểu đồ bằng kết quả CV đã xuất, ghi thí nghiệm 4 biến là việc đang chờ dữ liệu. [Khóa V1](../../manifests/t10_lock.json) · [Quy trình dự án](../../AGENTS.md)
 
 ## Lịch làm việc và điều kiện bàn giao
 
@@ -66,4 +66,4 @@ Kịch bản buổi bảo vệ đi từ trang giới thiệu đến ca Pima số
 - **TASKS** chia việc theo người, phụ thuộc, mốc ba ngày và phần thêm ngày bốn. Mỗi việc kết thúc bằng một thao tác demo hoặc một kết quả có thể kiểm tra.
 - **REVIEW** đặt tiêu chí từ trước cho minh chứng ba môn, tái lập biểu đồ, cách đọc kết quả bất lợi, kiểm tra tranh cùng một giờ và hai người tự vấn đáp. Kết quả thực tế sẽ được điền sau khi chạy.
 
-Nhóm triển khai giai đoạn 2 theo [trạng thái](v2/STATUS.md), [đặc tả](v2/SPEC.md), [danh sách công việc](v2/TASKS.md) và [phiếu nghiệm thu](v2/REVIEW.md).
+Nhóm triển khai giai đoạn 2 theo [trạng thái](../v2/STATUS.md), [đặc tả](../v2/SPEC.md), [danh sách công việc](../v2/TASKS.md) và [phiếu nghiệm thu](../v2/REVIEW.md).

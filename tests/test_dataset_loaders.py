@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from dataset_loaders import load_cleveland, load_pima
+from medical_expert.data.loaders import load_cleveland, load_pima
 
 
 PIMA_HEADER = """% Fixture with the schema of the selected OpenML release

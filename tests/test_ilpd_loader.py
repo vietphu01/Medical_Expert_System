@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from ilpd_loader import load_ilpd
+from medical_expert.data.ilpd import load_ilpd
 
 
 class IlpdLoaderTests(unittest.TestCase):

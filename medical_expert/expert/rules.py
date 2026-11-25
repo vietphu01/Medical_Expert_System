@@ -1,6 +1,6 @@
 """Rule candidates for the four dataset targets, reviewed before the holdout."""
 
-from fuzzy_engine import fuzzy_membership
+from medical_expert.expert.fuzzy import fuzzy_membership
 
 
 FEATURE_UNITS = {

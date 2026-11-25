@@ -1,6 +1,5 @@
 import importlib.util
 import os
-import shutil
 import sqlite3
 import unittest
 from contextlib import chdir, closing
@@ -8,7 +7,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import Mock, patch
 
-from diseases_config import DISEASES
+from medical_expert.web.diseases import DISEASES
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,8 +17,7 @@ class DiagnosisValidationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.directory = Path(cls.enterClassContext(TemporaryDirectory()))
-        shutil.copyfile(ROOT / 'knowledge_base.json', cls.directory / 'knowledge_base.json')
-        spec = importlib.util.spec_from_file_location('validation_test_app', ROOT / 'app.py')
+        spec = importlib.util.spec_from_file_location('validation_test_app', ROOT / 'medical_expert/web/app.py')
         cls.module = importlib.util.module_from_spec(spec)
         with chdir(cls.directory), patch.dict(
             os.environ, MEDICAL_HISTORY_DB=str(cls.directory / 'startup.db')

@@ -2,7 +2,7 @@
 
 import unittest
 
-from research_rules import evaluate_rules
+from medical_expert.expert.rules import evaluate_rules
 
 
 class ResearchRulesTest(unittest.TestCase):

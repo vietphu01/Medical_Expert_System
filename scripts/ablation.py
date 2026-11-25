@@ -3,9 +3,9 @@
 from collections import Counter
 from statistics import fmean
 
-from experiment_metrics import binary_metrics
-from fusion import fusion_scores
-from research_rules import evaluate_rules
+from medical_expert.ml.metrics import binary_metrics
+from medical_expert.expert.fusion import fusion_scores
+from medical_expert.expert.rules import evaluate_rules
 from scripts.train import THRESHOLD, metric_rows
 
 

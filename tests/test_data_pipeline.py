@@ -9,8 +9,8 @@ from pathlib import Path
 
 import numpy as np
 
-from data_pipeline import make_manifest, prepare_fold
-from dataset_loaders import load_cleveland, load_pima
+from medical_expert.data.pipeline import make_manifest, prepare_fold
+from medical_expert.data.loaders import load_cleveland, load_pima
 from test_dataset_loaders import PIMA_HEADER
 
 

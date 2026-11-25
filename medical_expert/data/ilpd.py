@@ -1,6 +1,6 @@
 """Load the original headerless UCI Indian Liver Patient Dataset."""
 
-from dataset_loaders import _load
+from medical_expert.data.loaders import _load
 
 
 ILPD_COLUMNS = (

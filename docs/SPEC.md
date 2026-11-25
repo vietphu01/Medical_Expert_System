@@ -8,7 +8,7 @@
 
 ### Cleveland
 
-Nguồn đã đối chiếu là `processed.cleveland.data` từ UCI Heart Disease #45. CSV không có header, thứ tự cột `age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal, num`. Phiên bản đầu dùng ba đặc trưng theo thứ tự dưới đây. [UCI Heart Disease](https://archive.ics.uci.edu/dataset/45/heart+disease) · [Hồ sơ nguồn T03](T03_DATA_SOURCES.md)
+Nguồn đã đối chiếu là `processed.cleveland.data` từ UCI Heart Disease #45. CSV không có header, thứ tự cột `age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal, num`. Phiên bản đầu dùng ba đặc trưng theo thứ tự dưới đây. [UCI Heart Disease](https://archive.ics.uci.edu/dataset/45/heart+disease) · [Hồ sơ nguồn T03](tasks/T03_DATA_SOURCES.md)
 
 | Cột nguồn | Khóa chuẩn | Kiểu và ý nghĩa |
 |---|---|---|
@@ -21,7 +21,7 @@ Nguồn đã đối chiếu là `processed.cleveland.data` từ UCI Heart Diseas
 
 ### Pima
 
-Loader đọc `diabetes.arff` của OpenML `diabetes` #37, version 1. Tệp có tám cột số và nhãn nominal ở cột cuối. Quyền tái phân phối bản gốc chưa được xác minh. [OpenML #37](https://www.openml.org/d/37) · [Hồ sơ nguồn T03](T03_DATA_SOURCES.md)
+Loader đọc `diabetes.arff` của OpenML `diabetes` #37, version 1. Tệp có tám cột số và nhãn nominal ở cột cuối. Quyền tái phân phối bản gốc chưa được xác minh. [OpenML #37](https://www.openml.org/d/37) · [Hồ sơ nguồn T03](tasks/T03_DATA_SOURCES.md)
 
 | Vị trí (từ 1) | Cột OpenML | Khóa chuẩn | Kiểu và ý nghĩa |
 |---|---|---|---|
@@ -35,7 +35,7 @@ Loader đọc `diabetes.arff` của OpenML `diabetes` #37, version 1. Tệp có 
 | 8 | `age` | `age` | Số nguyên, năm |
 | 9 | `class` | `y` | `tested_negative` → 0, `tested_positive` → 1 |
 
-Thứ tự đặc trưng ML là `glucose, bmi, age`. Glucose và BMI bằng 0 được xử lý là missing theo quy ước hiệu chỉnh của `PimaIndiansDiabetes2`. Số lần mang thai bằng 0 là một giá trị hợp lệ. Khi chuyển form và luật sang Pima, dùng đúng định nghĩa glucose hai giờ OGTT và xác minh đơn vị của cột `plas` trước khi áp dụng ngưỡng có đơn vị. Bản OpenML gồm nữ từ 21 tuổi trở lên có gốc Pima, thuộc quần thể được nghiên cứu gần Phoenix, Arizona. [Hồ sơ nguồn T03](T03_DATA_SOURCES.md)
+Thứ tự đặc trưng ML là `glucose, bmi, age`. Glucose và BMI bằng 0 được xử lý là missing theo quy ước hiệu chỉnh của `PimaIndiansDiabetes2`. Số lần mang thai bằng 0 là một giá trị hợp lệ. Khi chuyển form và luật sang Pima, dùng đúng định nghĩa glucose hai giờ OGTT và xác minh đơn vị của cột `plas` trước khi áp dụng ngưỡng có đơn vị. Bản OpenML gồm nữ từ 21 tuổi trở lên có gốc Pima, thuộc quần thể được nghiên cứu gần Phoenix, Arizona. [Hồ sơ nguồn T03](tasks/T03_DATA_SOURCES.md)
 
 ### ILPD và CKD
 
@@ -44,7 +44,7 @@ Thứ tự đặc trưng ML là `glucose, bmi, age`. Glucose và BMI bằng 0 đ
 | [UCI ILPD](https://archive.ics.uci.edu/dataset/225/ilpd+indian+liver+patient+dataset) | `TB → bilirubin`, `ALB → albumin`, `Age → age`; `Selector`: 1 → 1, 2 → 0 | Tuổi tính theo năm; đơn vị của `TB` và `ALB` chưa xác minh. Ô rỗng và `?` là missing. |
 | [UCI CKD](https://archive.ics.uci.edu/dataset/336/chronic+kidney+disease) | `sc → creatinine`, `bp → bp`, `age → age`; `class`: `ckd → 1`, `notckd → 0` | Creatinine huyết thanh mg/dL, huyết áp mmHg, tuổi tính theo năm. Tệp CSV có header; trim khoảng trắng/tab và coi `NaN`, ô rỗng, `?` là missing. Chỉ dùng `bp` trong luật khi kiểu phép đo đã rõ. |
 
-Phiên bản tệp, số dòng, nhãn và missing theo đúng nguồn đã xác minh được ghi trong [hồ sơ T05](T05_DATA_SOURCES.md).
+Phiên bản tệp, số dòng, nhãn và missing theo đúng nguồn đã xác minh được ghi trong [hồ sơ T05](tasks/T05_DATA_SOURCES.md).
 
 ### Quy tắc chung
 

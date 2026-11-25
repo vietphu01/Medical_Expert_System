@@ -1,8 +1,8 @@
 """Loaders and input descriptions shared by the dataset commands."""
 
-from ckd_loader import load_ckd
-from dataset_loaders import load_cleveland, load_pima
-from ilpd_loader import load_ilpd
+from medical_expert.data.ckd import load_ckd
+from medical_expert.data.loaders import load_cleveland, load_pima
+from medical_expert.data.ilpd import load_ilpd
 
 
 DATASETS = {

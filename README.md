@@ -2,7 +2,26 @@
 
 Đồ án Flask, SQLite và các mô hình ML tự viết bằng NumPy cho bốn bộ dữ liệu tim mạch, tiểu đường, gan và thận. Ứng dụng trình bày điểm hỗ trợ và trace chỉ số → fact → luật → kết quả. Đây là công cụ nghiên cứu, không phải hệ thống chẩn đoán y khoa.
 
-[Báo cáo dự án từ A đến Z](docs/BAO_CAO_DU_AN.md) · [Đánh giá đồ án và hướng tự cải thiện](docs/REVIEW.md) · [Sáu ca demo](docs/T13_DEMO.md)
+[Báo cáo dự án từ A đến Z](docs/reports/BAO_CAO_DU_AN.md) · [Đánh giá đồ án và hướng tự cải thiện](docs/REVIEW.md) · [Sáu ca demo](docs/tasks/T13_DEMO.md)
+
+## Cấu trúc thư mục
+
+```text
+app.py                  Điểm vào: `python app.py` hoặc `flask --app app run`
+medical_expert/         Mã nguồn ứng dụng và phương pháp
+  web/                  Flask (app.py), schema form (diseases.py), templates/, static/
+  data/                 Nạp nguồn (loaders, ilpd, ckd), registry, chia và tiền xử lý (pipeline)
+  ml/                   Mô hình NumPy (algorithms), khôi phục artifact (runtime), metric (metrics)
+  expert/               Luật và fact (rules), liên thuộc (fuzzy), gộp ML với luật (fusion)
+scripts/                Lệnh chạy thí nghiệm: train, validate_ablation, evaluate, ablation, ...
+tests/                  Kiểm thử unittest
+manifests/              Manifest chia dữ liệu, metadata nguồn và khóa cấu hình T10 (đầu vào của scripts)
+results/                Kết quả mỗi lần chạy (CSV/JSON), không commit artifact lớn
+docs/                   Đặc tả, task, trạng thái; reports/ (báo cáo, vấn đáp), tasks/ (ghi chú T03–T13), v2/
+legacy/                 Nguyên mẫu cũ không còn được ứng dụng gọi
+```
+
+Quy ước phụ thuộc một chiều: `web` → `expert`, `ml`; `ml` → `data`; `scripts` dùng cả ba nhóm; `data` và `expert` không phụ thuộc nhóm nào khác.
 
 ## Cài đặt
 
@@ -18,7 +37,7 @@ Các test ứng dụng dùng SQLite tạm và fixture tự tạo. Test giao di�
 
 ## Dữ liệu nguồn
 
-Giữ tệp nguồn ngoài repo. Đường dẫn trong lệnh bên dưới là ví dụ, thay bằng đường dẫn thực. Các loader yêu cầu đúng bản và định dạng sau; SHA-256 đã đối chiếu nằm trong [hồ sơ T03](docs/T03_DATA_SOURCES.md), [hồ sơ T05](docs/T05_DATA_SOURCES.md) và [khóa T10](docs/t10_lock.json).
+Giữ tệp nguồn ngoài repo. Đường dẫn trong lệnh bên dưới là ví dụ, thay bằng đường dẫn thực. Các loader yêu cầu đúng bản và định dạng sau; SHA-256 đã đối chiếu nằm trong [hồ sơ T03](docs/tasks/T03_DATA_SOURCES.md), [hồ sơ T05](docs/tasks/T05_DATA_SOURCES.md) và [khóa T10](manifests/t10_lock.json).
 
 | Bộ | Tệp đầu vào | Nguồn và điều kiện |
 |---|---|---|
@@ -45,13 +64,13 @@ MEDICAL_HISTORY_DB="$demo_db_dir/history.db" \
   .venv/bin/python -B -m flask --app app run --host 127.0.0.1
 ```
 
-Mở `http://127.0.0.1:5000/`. Nếu bỏ `MEDICAL_MODEL_RUN`, ứng dụng đọc `results/t06-cv-seed42`; nếu thiếu hoặc sai artifact, API trả 503 và giao diện báo mô hình chưa sẵn sàng. Nếu bỏ `MEDICAL_HISTORY_DB`, ứng dụng dùng `medical_history.db` tại thư mục chạy; biến môi trường trong ví dụ chọn DB riêng. Ô chỉ số bỏ trống được gửi là giá trị chưa biết: luật giữ unknown, còn ML điền median đã học từ train. [Chi tiết huấn luyện](docs/T06_TRAINING.md)
+Mở `http://127.0.0.1:5000/`. Nếu bỏ `MEDICAL_MODEL_RUN`, ứng dụng đọc `results/t06-cv-seed42`; nếu thiếu hoặc sai artifact, API trả 503 và giao diện báo mô hình chưa sẵn sàng. Nếu bỏ `MEDICAL_HISTORY_DB`, ứng dụng dùng `medical_history.db` tại thư mục chạy; biến môi trường trong ví dụ chọn DB riêng. Ô chỉ số bỏ trống được gửi là giá trị chưa biết: luật giữ unknown, còn ML điền median đã học từ train. [Chi tiết huấn luyện](docs/tasks/T06_TRAINING.md)
 
 ## Tái lập và đọc kết quả
 
-Manifest cố định holdout phân tầng 80/20 và 5 fold train, seed 42: [Cleveland/Pima](docs/t04_split_manifest.json), [ILPD/CKD](docs/t05_split_manifest.json). Imputer và scaler học từ train của từng fold. `results/<run_id>/metadata.json`, `metrics.csv`, `predictions.csv`, `split_manifest.json` và `models.json` là nguồn để đối chiếu kết quả CV; không lấy số từ dữ liệu tổng hợp. Artifact KNN chứa ma trận train đã biến đổi, nên quản lý tệp kết quả cẩn thận theo điều kiện dữ liệu nguồn.
+Manifest cố định holdout phân tầng 80/20 và 5 fold train, seed 42: [Cleveland/Pima](manifests/t04_split_manifest.json), [ILPD/CKD](manifests/t05_split_manifest.json). Imputer và scaler học từ train của từng fold. `results/<run_id>/metadata.json`, `metrics.csv`, `predictions.csv`, `split_manifest.json` và `models.json` là nguồn để đối chiếu kết quả CV; không lấy số từ dữ liệu tổng hợp. Artifact KNN chứa ma trận train đã biến đổi, nên quản lý tệp kết quả cẩn thận theo điều kiện dữ liệu nguồn.
 
-Lệnh đối chứng dưới đây đọc dự đoán ngoài fold từ run CV mặc định và ghi vào `results/t09-validation-seed42`. Có thể dùng `--cv-run` và `--output` để đối chứng một lần huấn luyện khác. [T09](docs/T09_VALIDATION.md)
+Lệnh đối chứng dưới đây đọc dự đoán ngoài fold từ run CV mặc định và ghi vào `results/t09-validation-seed42`. Có thể dùng `--cv-run` và `--output` để đối chứng một lần huấn luyện khác. [T09](docs/tasks/T09_VALIDATION.md)
 
 ```bash
 .venv/bin/python -B -m scripts.validate_ablation \
@@ -59,7 +78,7 @@ Lệnh đối chứng dưới đây đọc dự đoán ngoài fold từ run CV m
   --pima /path/to/diabetes.arff
 ```
 
-Đánh giá holdout cuối chỉ dành cho cấu hình đã khóa trong [T10](docs/t10_lock.json), sau T09, không dùng để chọn mô hình, sửa luật hoặc ngưỡng. Lệnh dưới đây dùng run và đường dẫn đã khóa; nó kiểm tra hash cấu hình, dữ liệu và artifact, và từ chối ghi đè kết quả đã có. Tham khảo [STATUS](docs/STATUS.md) để biết đợt đánh giá đã được chạy và nghiệm thu hay chưa.
+Đánh giá holdout cuối chỉ dành cho cấu hình đã khóa trong [T10](manifests/t10_lock.json), sau T09, không dùng để chọn mô hình, sửa luật hoặc ngưỡng. Lệnh dưới đây dùng run và đường dẫn đã khóa; nó kiểm tra hash cấu hình, dữ liệu và artifact, và từ chối ghi đè kết quả đã có. Tham khảo [STATUS](docs/STATUS.md) để biết đợt đánh giá đã được chạy và nghiệm thu hay chưa.
 
 ```bash
 .venv/bin/python -B -m scripts.evaluate --run-id t10-test-seed42 --split test \
@@ -69,6 +88,6 @@ Lệnh đối chứng dưới đây đọc dự đoán ngoài fold từ run CV m
   --ckd /path/to/data.csv
 ```
 
-Kết quả holdout đã được lưu và chuyển thành báo cáo tổng hợp cùng các ca sai theo ID. Các CSV và artifact nằm trong thư mục run cục bộ. [Kết quả T10](docs/T10_HOLDOUT.md) · [Phân tích lỗi T12](docs/T12_ERROR_ANALYSIS.md) · [Sáu ca demo có ảnh](docs/T13_DEMO.md)
+Kết quả holdout đã được lưu và chuyển thành báo cáo tổng hợp cùng các ca sai theo ID. Các CSV và artifact nằm trong thư mục run cục bộ. [Kết quả T10](docs/tasks/T10_HOLDOUT.md) · [Phân tích lỗi T12](docs/tasks/T12_ERROR_ANALYSIS.md) · [Sáu ca demo có ảnh](docs/tasks/T13_DEMO.md)
 
-Các điểm hỗ trợ chưa được hiệu chỉnh. Bộ dữ liệu nhỏ và quần thể Pima đặc thù hạn chế khả năng khái quát. Luật và CF phục vụ đối chứng trong đồ án. ILPD và CKD hiện không có luật đích. [Nguồn và ánh xạ luật](docs/T07_RULES.md) · [Đặc tả](docs/SPEC.md) · [Trạng thái](docs/STATUS.md)
+Các điểm hỗ trợ chưa được hiệu chỉnh. Bộ dữ liệu nhỏ và quần thể Pima đặc thù hạn chế khả năng khái quát. Luật và CF phục vụ đối chứng trong đồ án. ILPD và CKD hiện không có luật đích. [Nguồn và ánh xạ luật](docs/tasks/T07_RULES.md) · [Đặc tả](docs/SPEC.md) · [Trạng thái](docs/STATUS.md)

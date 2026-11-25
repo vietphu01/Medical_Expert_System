@@ -7,8 +7,8 @@ from datetime import datetime, timezone
 from hashlib import sha256
 from pathlib import Path
 
-from experiment_metrics import binary_metrics
-from model_runtime import CONFIG, _restore_model, load_run
+from medical_expert.ml.metrics import binary_metrics
+from medical_expert.ml.runtime import CONFIG, _restore_model, load_run
 from scripts.ablation import compare
 from scripts.train import (
     METRIC_FIELDS, PREDICTION_FIELDS, ROOT, SOURCE_FILES, THRESHOLD, load_source,
@@ -16,13 +16,14 @@ from scripts.train import (
 )
 
 
-LOCK_PATH = ROOT / "docs/t10_lock.json"
+LOCK_PATH = ROOT / "manifests/t10_lock.json"
 METHOD_FILES = (
-    "data_pipeline.py", "dataset_loaders.py", "dataset_registry.py", "ilpd_loader.py",
-    "ckd_loader.py", "experiment_metrics.py", "math_ml_from_scratch.py", "model_runtime.py",
-    "fuzzy_engine.py", "research_rules.py", "fusion.py", "scripts/train.py",
+    "medical_expert/data/pipeline.py", "medical_expert/data/loaders.py", "medical_expert/data/registry.py",
+    "medical_expert/data/ilpd.py", "medical_expert/data/ckd.py", "medical_expert/ml/metrics.py",
+    "medical_expert/ml/algorithms.py", "medical_expert/ml/runtime.py", "medical_expert/expert/fuzzy.py",
+    "medical_expert/expert/rules.py", "medical_expert/expert/fusion.py", "scripts/train.py",
     "scripts/ablation.py", "scripts/validate_ablation.py", "scripts/evaluate.py",
-    "docs/t04_split_manifest.json", "docs/t05_split_manifest.json",
+    "manifests/t04_split_manifest.json", "manifests/t05_split_manifest.json",
 )
 
 

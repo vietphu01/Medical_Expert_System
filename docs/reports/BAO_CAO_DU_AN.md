@@ -16,7 +16,7 @@
 
 ## 1. Quá trình phát triển
 
-Phiên bản đầu đã có Flask, giao diện chọn bệnh, thuật toán NumPy, logic mờ, luật IF–THEN và SQLite. Commit gốc `94d2643` ngày 15/11 sinh 300 bản ghi giả cho mỗi nhóm, huấn luyện lúc Flask khởi động, dùng ensemble để suy luận và chạy `DROP TABLE IF EXISTS history` khi khởi tạo. Các điểm lúc đó phục vụ minh họa nguyên mẫu. Đồ án sau đó đặt hai mục tiêu có thể kiểm tra được. Mục tiêu thứ nhất là so sánh mô hình trên bốn bộ dữ liệu thật theo cùng giao thức. Mục tiêu thứ hai là đo tác động của luật trên Cleveland và Pima, đồng thời cho người xem lần lại từng bước suy luận trên một ca. [Đặc tả](SPEC.md) · [Mốc cuối Tuần 1](BAO_CAO_TIEN_DO_TUAN_1.md)
+Phiên bản đầu đã có Flask, giao diện chọn bệnh, thuật toán NumPy, logic mờ, luật IF–THEN và SQLite. Commit gốc `94d2643` ngày 15/11 sinh 300 bản ghi giả cho mỗi nhóm, huấn luyện lúc Flask khởi động, dùng ensemble để suy luận và chạy `DROP TABLE IF EXISTS history` khi khởi tạo. Các điểm lúc đó phục vụ minh họa nguyên mẫu. Đồ án sau đó đặt hai mục tiêu có thể kiểm tra được. Mục tiêu thứ nhất là so sánh mô hình trên bốn bộ dữ liệu thật theo cùng giao thức. Mục tiêu thứ hai là đo tác động của luật trên Cleveland và Pima, đồng thời cho người xem lần lại từng bước suy luận trên một ca. [Đặc tả](../SPEC.md) · [Mốc cuối Tuần 1](BAO_CAO_TIEN_DO_TUAN_1.md)
 
 | Mốc | Vấn đề và công việc đã làm | Bằng chứng bàn giao |
 |---|---|---|
@@ -25,11 +25,11 @@ Phiên bản đầu đã có Flask, giao diện chọn bệnh, thuật toán Num
 | **T06 · Huấn luyện** | Tách huấn luyện ngoại tuyến khỏi Flask. Chạy bốn mô hình tự viết, ensemble và baseline. Mỗi bộ có mô hình được chọn theo F1 kiểm chứng chéo. | Run `t06-cv-seed42` chứa mô hình đã fit, dự đoán và metric. Commit `46e7836`. |
 | **T07–T09 · Luật và đối chứng** | Rà soát ngữ nghĩa luật, đánh dấu luật cùng đích, đưa điểm ML vào phép gộp một lần và xây trace. So bốn cấu hình trên dự đoán ngoài fold. | Bảng nguồn luật, test phép gộp, run `t09-validation-seed42`. Commit `7ee3b5a`, `cb396f3`, `5df8e64`. |
 | **T10 · Đánh giá cuối** | Khóa nguồn, mô hình, split, luật, ngưỡng và mã phương pháp trước khi chạy holdout. | Commit khóa `0f79c31` đứng trước commit kết quả `3427051`. Run `t10-test-seed42` có 380 dòng metric và 3.314 dòng dự đoán. |
-| **T11–T13 · Giải thích và demo** | GUI đọc trace. Phân tích ca sai, ca luật và ML bất đồng. Chuẩn bị sáu ca tự tạo bao gồm thiếu dữ kiện, ngay ngưỡng mờ, nhiều luật và ngoài miền. | [Phân tích lỗi](T12_ERROR_ANALYSIS.md) · [Ca demo và ảnh](T13_DEMO.md). Commit `51c62a4`, `aa35a37`, `e9210b1`. |
+| **T11–T13 · Giải thích và demo** | GUI đọc trace. Phân tích ca sai, ca luật và ML bất đồng. Chuẩn bị sáu ca tự tạo bao gồm thiếu dữ kiện, ngay ngưỡng mờ, nhiều luật và ngoài miền. | [Phân tích lỗi](../tasks/T12_ERROR_ANALYSIS.md) · [Ca demo và ảnh](../tasks/T13_DEMO.md). Commit `51c62a4`, `aa35a37`, `e9210b1`. |
 | **T14–T15 · Chốt phạm vi và bàn giao** | T14 là thử nghiệm fuzzy liên tục, được quyết định bỏ qua trước khóa T10. T15 kiểm tra dựng từ bản Git sạch và chạy đủ bốn nhóm. | 46/46 test ở mốc T15. Run được tái lập và đối chiếu với khóa. Commit `539b442`. |
 | **Sau bàn giao · Review và GUI** | Đặt điểm ML, luật và kết hợp cạnh nhau. Thêm giải thích trường thiếu, ngưỡng chuẩn hóa của cây và ý nghĩa điểm lịch sử. Chuyển CSS/JS sang tài nguyên cục bộ. | 47/47 test, sáu ca Chrome, bốn form và màn hình rộng 390 px. Commit `0f85450`, `510b56e`. |
 
-Các nhãn “Tuần 1–4” trong backlog là nhóm công việc theo kế hoạch. Tiến độ thực tế đối chiếu theo commit và bằng chứng nghiệm thu. [TASKS](TASKS.md) · [STATUS](STATUS.md)
+Các nhãn “Tuần 1–4” trong backlog là nhóm công việc theo kế hoạch. Tiến độ thực tế đối chiếu theo commit và bằng chứng nghiệm thu. [TASKS](../TASKS.md) · [STATUS](../STATUS.md)
 
 ## 2. Kiến trúc
 
@@ -63,15 +63,15 @@ flowchart TD
 
 | Khi muốn tìm… | Mở tệp |
 |---|---|
-| Các đặc trưng, tên hiển thị và miền nhập của form | [diseases_config.py](../diseases_config.py) |
-| Nạp tệp nguồn, chuẩn hóa nhãn, sinh ID | [dataset_loaders.py](../dataset_loaders.py) · [ilpd_loader.py](../ilpd_loader.py) · [ckd_loader.py](../ckd_loader.py) |
-| Chia dữ liệu, điền thiếu và chuẩn hóa | [data_pipeline.py](../data_pipeline.py) |
-| Công thức mô hình NumPy, cấu hình và cách khôi phục artifact | [math_ml_from_scratch.py](../math_ml_from_scratch.py) · [model_runtime.py](../model_runtime.py) |
-| Lệnh huấn luyện, đối chứng và đánh giá | [train.py](../scripts/train.py) · [validate_ablation.py](../scripts/validate_ablation.py) · [evaluate.py](../scripts/evaluate.py) |
-| Fact, luật đích, phép gộp và trace | [research_rules.py](../research_rules.py) · [fusion.py](../fusion.py) |
-| API, lịch sử và giao diện | [app.py](../app.py) · [index.html](../templates/index.html) · [workspace.js](../static/workspace.js) · [workspace.css](../static/workspace.css) |
+| Các đặc trưng, tên hiển thị và miền nhập của form | [medical_expert/web/diseases.py](../../medical_expert/web/diseases.py) |
+| Nạp tệp nguồn, chuẩn hóa nhãn, sinh ID | [medical_expert/data/loaders.py](../../medical_expert/data/loaders.py) · [medical_expert/data/ilpd.py](../../medical_expert/data/ilpd.py) · [medical_expert/data/ckd.py](../../medical_expert/data/ckd.py) |
+| Chia dữ liệu, điền thiếu và chuẩn hóa | [medical_expert/data/pipeline.py](../../medical_expert/data/pipeline.py) |
+| Công thức mô hình NumPy, cấu hình và cách khôi phục artifact | [medical_expert/ml/algorithms.py](../../medical_expert/ml/algorithms.py) · [medical_expert/ml/runtime.py](../../medical_expert/ml/runtime.py) |
+| Lệnh huấn luyện, đối chứng và đánh giá | [train.py](../../scripts/train.py) · [validate_ablation.py](../../scripts/validate_ablation.py) · [evaluate.py](../../scripts/evaluate.py) |
+| Fact, luật đích, phép gộp và trace | [medical_expert/expert/rules.py](../../medical_expert/expert/rules.py) · [medical_expert/expert/fusion.py](../../medical_expert/expert/fusion.py) |
+| API, lịch sử và giao diện | [medical_expert/web/app.py](../../medical_expert/web/app.py) · [index.html](../../medical_expert/web/templates/index.html) · [workspace.js](../../medical_expert/web/static/workspace.js) · [workspace.css](../../medical_expert/web/static/workspace.css) |
 
-Để lần theo suy luận hiện tại, bắt đầu ở `diagnose()`, rồi đọc `RuntimeModel.score()`, `evaluate_rules()` và `make_trace()`. Bộ `knowledge_base.json` và `inference_engine.py` thuộc nguyên mẫu. Luật được API hiện tại gọi nằm trong `research_rules.py`. [Điểm vào Flask](../app.py) · [Luật](../research_rules.py)
+Để lần theo suy luận hiện tại, bắt đầu ở `diagnose()`, rồi đọc `RuntimeModel.score()`, `evaluate_rules()` và `make_trace()`. Bộ `legacy/knowledge_base.json` và `legacy/inference_engine.py` thuộc nguyên mẫu. Luật được API hiện tại gọi nằm trong `medical_expert/expert/rules.py`. [Điểm vào Flask](../../medical_expert/web/app.py) · [Luật](../../medical_expert/expert/rules.py)
 
 ## 3. Dữ liệu và cách chia tập
 
@@ -84,12 +84,12 @@ flowchart TD
 | ILPD · UCI #225 | Bilirubin toàn phần `TB`, albumin `ALB`, tuổi | `Selector=1` | 570 (164/406) | 456 (131/325) | 114 (33/81) |
 | CKD · UCI #336 | Creatinine huyết thanh `sc`, huyết áp `bp`, tuổi | `ckd` | 400 (150/250) | 320 (120/200) | 80 (30/50) |
 
-- **Cleveland.** Dùng tệp 14 cột `processed.cleveland.data`. Ba trường đã chọn đầy đủ. Missing ở `ca` và `thal` nằm ngoài ba trường này. [Hồ sơ Cleveland và Pima](T03_DATA_SOURCES.md)
-- **Pima.** Năm giá trị glucose bằng 0 và 11 giá trị BMI bằng 0 được quy về thiếu. Tài liệu nguồn xác nhận phép đo glucose hai giờ OGTT. Đơn vị riêng của cột `plas` và quyền tái phân phối tệp gốc vẫn chưa xác minh. Quần thể nghiên cứu gồm phụ nữ gốc Pima từ 21 tuổi trở lên. [Hồ sơ Cleveland và Pima](T03_DATA_SOURCES.md)
-- **ILPD.** Tệp gốc có 583 dòng. Loại 13 dòng trùng toàn bộ còn 570. Ba trường đã chọn đầy đủ. Đơn vị bilirubin và albumin chưa được xác minh từ tài liệu nguồn. [Hồ sơ ILPD và CKD](T05_DATA_SOURCES.md)
-- **CKD.** Thiếu 17 giá trị creatinine, 12 huyết áp và 9 tuổi. Creatinine tính bằng mg/dL. Huyết áp ghi mmHg, hồ sơ nguồn chưa xác định tâm thu hay tâm trương. [Hồ sơ ILPD và CKD](T05_DATA_SOURCES.md)
+- **Cleveland.** Dùng tệp 14 cột `processed.cleveland.data`. Ba trường đã chọn đầy đủ. Missing ở `ca` và `thal` nằm ngoài ba trường này. [Hồ sơ Cleveland và Pima](../tasks/T03_DATA_SOURCES.md)
+- **Pima.** Năm giá trị glucose bằng 0 và 11 giá trị BMI bằng 0 được quy về thiếu. Tài liệu nguồn xác nhận phép đo glucose hai giờ OGTT. Đơn vị riêng của cột `plas` và quyền tái phân phối tệp gốc vẫn chưa xác minh. Quần thể nghiên cứu gồm phụ nữ gốc Pima từ 21 tuổi trở lên. [Hồ sơ Cleveland và Pima](../tasks/T03_DATA_SOURCES.md)
+- **ILPD.** Tệp gốc có 583 dòng. Loại 13 dòng trùng toàn bộ còn 570. Ba trường đã chọn đầy đủ. Đơn vị bilirubin và albumin chưa được xác minh từ tài liệu nguồn. [Hồ sơ ILPD và CKD](../tasks/T05_DATA_SOURCES.md)
+- **CKD.** Thiếu 17 giá trị creatinine, 12 huyết áp và 9 tuổi. Creatinine tính bằng mg/dL. Huyết áp ghi mmHg, hồ sơ nguồn chưa xác định tâm thu hay tâm trương. [Hồ sơ ILPD và CKD](../tasks/T05_DATA_SOURCES.md)
 
-Loader đối chiếu cấu trúc và phiên bản tệp, giữ dòng đầu khi trùng trên **toàn bộ cột nguồn đã chuẩn hóa, gồm nhãn**, rồi xuất ba đặc trưng và nhãn nhị phân. ID dựa trên vị trí dòng trong cùng tệp. Hai dòng có cùng ba đặc trưng vẫn có thể là hai bản ghi riêng. Các nguồn thiếu mã bệnh nhân nên giao thức phân tầng theo **nhãn** và giữ ID ổn định theo bản tệp. [Đặc tả dữ liệu](SPEC.md)
+Loader đối chiếu cấu trúc và phiên bản tệp, giữ dòng đầu khi trùng trên **toàn bộ cột nguồn đã chuẩn hóa, gồm nhãn**, rồi xuất ba đặc trưng và nhãn nhị phân. ID dựa trên vị trí dòng trong cùng tệp. Hai dòng có cùng ba đặc trưng vẫn có thể là hai bản ghi riêng. Các nguồn thiếu mã bệnh nhân nên giao thức phân tầng theo **nhãn** và giữ ID ổn định theo bản tệp. [Đặc tả dữ liệu](../SPEC.md)
 
 ### Từ một tệp nguồn đến 5 fold
 
@@ -98,7 +98,7 @@ Loader đối chiếu cấu trúc và phiên bản tệp, giữ dòng đầu khi
 3. **Fit tiền xử lý trong từng lượt.** Tính trung vị trên phần train của fold, điền giá trị thiếu rồi tính trung bình và độ lệch chuẩn trên dữ liệu train đã điền. Với mỗi cột, đổi `x` thành `(x − mean_train) / scale_train`. Cột hằng dùng scale 1. Cột thiếu toàn bộ trong train báo lỗi.
 4. **Dùng lại thống kê đã học.** Validation nhận median, mean và scale từ train của fold tương ứng. Khi fit lại mô hình cuối, ba thống kê được học từ toàn bộ train và dùng cho holdout lẫn ứng dụng. Nhánh luật vẫn nhận chỉ số gốc, với giá trị thiếu là chưa biết.
 
-Nếu tính median hoặc scale trên cả tập rồi mới chia, dữ liệu dành cho đánh giá đã tác động đến đầu vào của quá trình huấn luyện. Manifest và test T04 kiểm tra rằng thay đổi riêng dữ liệu validation hoặc holdout trong fixture không làm thống kê fit trên train thay đổi. [Quy trình T04](T04_DATA_PIPELINE.md) · [Manifest Cleveland/Pima](t04_split_manifest.json) · [Manifest ILPD/CKD](t05_split_manifest.json)
+Nếu tính median hoặc scale trên cả tập rồi mới chia, dữ liệu dành cho đánh giá đã tác động đến đầu vào của quá trình huấn luyện. Manifest và test T04 kiểm tra rằng thay đổi riêng dữ liệu validation hoặc holdout trong fixture không làm thống kê fit trên train thay đổi. [Quy trình T04](../tasks/T04_DATA_PIPELINE.md) · [Manifest Cleveland/Pima](../../manifests/t04_split_manifest.json) · [Manifest ILPD/CKD](../../manifests/t05_split_manifest.json)
 
 ## 4. Huấn luyện và chọn mô hình
 
@@ -113,7 +113,7 @@ Các mô hình cùng nhận ba đặc trưng của từng bộ, dùng chung mani
 | Ensemble Voting | Fit bốn mô hình trên và lấy trung bình bốn điểm lớp dương. | Trung bình đều, còn gọi là soft voting. |
 | Baseline lớp phổ biến | Luôn dự đoán lớp xuất hiện nhiều nhất trong train của lượt fit. | Nếu hòa chọn 0. Baseline dùng làm mốc. |
 
-Trong mỗi bộ, hệ thống chọn theo **trung bình F1 lớp dương qua 5 fold** trong năm phương án ứng viên. Nếu hòa điểm, thứ tự ưu tiên là Logistic Regression, KNN, Gaussian NB, Decision Tree, Ensemble. Sau CV, chương trình fit lại các phương án trên toàn bộ train và ghi tên mô hình đã chọn để Flask sử dụng. [Huấn luyện T06](T06_TRAINING.md) · [Cấu hình NumPy](../model_runtime.py)
+Trong mỗi bộ, hệ thống chọn theo **trung bình F1 lớp dương qua 5 fold** trong năm phương án ứng viên. Nếu hòa điểm, thứ tự ưu tiên là Logistic Regression, KNN, Gaussian NB, Decision Tree, Ensemble. Sau CV, chương trình fit lại các phương án trên toàn bộ train và ghi tên mô hình đã chọn để Flask sử dụng. [Huấn luyện T06](../tasks/T06_TRAINING.md) · [Cấu hình NumPy](../../medical_expert/ml/runtime.py)
 
 | Phương án · F1 CV trung bình | Cleveland | Pima | ILPD | CKD |
 |---|---:|---:|---:|---:|
@@ -124,7 +124,7 @@ Trong mỗi bộ, hệ thống chọn theo **trung bình F1 lớp dương qua 5 
 | Ensemble | 0,5392 | 0,6531 | 0,7851 | 0,9051 |
 | Baseline | 0,0000 | 0,0000 | 0,8323 | 0,7692 |
 
-In đậm là mô hình được chọn trong nhóm ứng viên. Độ lệch chuẩn F1 tương ứng với Cleveland, Pima, ILPD và CKD lần lượt là 0,0263, 0,0644, 0,0268 và 0,0189. Baseline ILPD luôn đoán dương do lớp 1 chiếm đa số. F1 dương của baseline cao hơn cả năm ứng viên trên CV. Đây là lý do cần xem cả hai lớp ở phần kết quả. [Bảng CV đã xuất](../results/t06-cv-seed42/metrics.csv) · [Tóm tắt T06](T06_TRAINING.md)
+In đậm là mô hình được chọn trong nhóm ứng viên. Độ lệch chuẩn F1 tương ứng với Cleveland, Pima, ILPD và CKD lần lượt là 0,0263, 0,0644, 0,0268 và 0,0189. Baseline ILPD luôn đoán dương do lớp 1 chiếm đa số. F1 dương của baseline cao hơn cả năm ứng viên trên CV. Đây là lý do cần xem cả hai lớp ở phần kết quả. [Bảng CV đã xuất](../../results/t06-cv-seed42/metrics.csv) · [Tóm tắt T06](../tasks/T06_TRAINING.md)
 
 | Tệp trong một run T06 | Dùng để làm gì |
 |---|---|
@@ -138,7 +138,7 @@ In đậm là mô hình được chọn trong nhóm ứng viên. Độ lệch ch
 
 ### Từ chỉ số gốc sang luật khớp
 
-**Fact** là một mệnh đề có thể đúng, sai hoặc chưa biết. Chẳng hạn, với cholesterol của Cleveland, hàm liên thuộc tăng tuyến tính từ 0 tại 180 mg/dL đến 1 tại 220 mg/dL. Fact được tính là đúng khi mức liên thuộc **lớn hơn** 0,5. Chính xác 200 mg/dL cho mức 0,5 và fact sai. Nếu ô trống, fact chưa biết. Điều kiện tuổi dùng so sánh rời rạc. Một luật khớp khi mọi tiền đề của nó đều đúng. [Hàm liên thuộc](../fuzzy_engine.py) · [Luật trong mã](../research_rules.py)
+**Fact** là một mệnh đề có thể đúng, sai hoặc chưa biết. Chẳng hạn, với cholesterol của Cleveland, hàm liên thuộc tăng tuyến tính từ 0 tại 180 mg/dL đến 1 tại 220 mg/dL. Fact được tính là đúng khi mức liên thuộc **lớn hơn** 0,5. Chính xác 200 mg/dL cho mức 0,5 và fact sai. Nếu ô trống, fact chưa biết. Điều kiện tuổi dùng so sánh rời rạc. Một luật khớp khi mọi tiền đề của nó đều đúng. [Hàm liên thuộc](../../medical_expert/expert/fuzzy.py) · [Luật trong mã](../../medical_expert/expert/rules.py)
 
 | Luật | Điều kiện tương đương sau khi xác định fact | CF | Vai trò |
 |---|---|---:|---|
@@ -147,7 +147,7 @@ In đậm là mô hình được chọn trong nhóm ứng viên. Độ lệch ch
 | `PIMA_TARGET_01` | Tuổi 35–70 và BMI >25 kg/m² | 0,50 | Góp điểm cho nhãn dương Pima. |
 | `PIMA_TARGET_02` | Tuổi 35–70 và BMI >30 kg/m² | 0,55 | Góp điểm cho nhãn dương Pima. |
 
-CF là hệ số hỗ trợ do đồ án đặt. Hai luật Pima chia sẻ tuổi và có các mốc BMI lồng nhau. Pima dùng glucose trong ML, còn luật dùng tuổi và BMI do đơn vị cột glucose chưa xác nhận. ILPD thiếu xác minh đơn vị cho hai chỉ số. CKD thiếu thông tin diễn tiến theo thời gian và loại huyết áp. Hai nhóm sau hiện chỉ có điểm ML. Mục “Quy tắc trích từ cây quyết định” trên GUI là mô tả các đường từ nút gốc tới lá của mô hình cây. Menu này dùng ngưỡng trên dữ liệu đã chuẩn hóa và độc lập với bốn luật ở bảng trên. [Nguồn và ánh xạ luật](T07_RULES.md) · [Cách xuất cây](../math_ml_from_scratch.py)
+CF là hệ số hỗ trợ do đồ án đặt. Hai luật Pima chia sẻ tuổi và có các mốc BMI lồng nhau. Pima dùng glucose trong ML, còn luật dùng tuổi và BMI do đơn vị cột glucose chưa xác nhận. ILPD thiếu xác minh đơn vị cho hai chỉ số. CKD thiếu thông tin diễn tiến theo thời gian và loại huyết áp. Hai nhóm sau hiện chỉ có điểm ML. Mục “Quy tắc trích từ cây quyết định” trên GUI là mô tả các đường từ nút gốc tới lá của mô hình cây. Menu này dùng ngưỡng trên dữ liệu đã chuẩn hóa và độc lập với bốn luật ở bảng trên. [Nguồn và ánh xạ luật](../tasks/T07_RULES.md) · [Cách xuất cây](../../medical_expert/ml/algorithms.py)
 
 ### Bốn cấu hình được so sánh
 
@@ -160,13 +160,13 @@ Gọi `p` là điểm ML, `cᵢ` là CF của luật cùng đích thứ `i` đã
 | Gộp mới · dùng trong GUI | `R + p × (1 − R)` |
 | Gộp cũ · dùng để đối chứng | Gộp `p` vào từng luật thành `qᵢ = cᵢ + p × (1 − cᵢ)`, rồi tính `1 − ∏(1 − qᵢ)`. |
 
-Mỗi điểm có giá trị từ 0 đến 1. Nhãn là 1 khi điểm **lớn hơn hoặc bằng** 0,5. Khi thiếu luật cùng đích khớp, chỉ luật bỏ ngỏ, còn cả hai cấu hình gộp trả `p`. Vì vậy độ bao phủ của luật là tỷ lệ mẫu có luật đích khớp. Kết quả chỉ luật được so với ML và gộp trên cùng tập con được bao phủ. Kết quả toàn tập vẫn so được ML và hai cách gộp. [Mã phép gộp](../fusion.py) · [Thiết kế đối chứng](T09_VALIDATION.md)
+Mỗi điểm có giá trị từ 0 đến 1. Nhãn là 1 khi điểm **lớn hơn hoặc bằng** 0,5. Khi thiếu luật cùng đích khớp, chỉ luật bỏ ngỏ, còn cả hai cấu hình gộp trả `p`. Vì vậy độ bao phủ của luật là tỷ lệ mẫu có luật đích khớp. Kết quả chỉ luật được so với ML và gộp trên cùng tập con được bao phủ. Kết quả toàn tập vẫn so được ML và hai cách gộp. [Mã phép gộp](../../medical_expert/expert/fusion.py) · [Thiết kế đối chứng](../tasks/T09_VALIDATION.md)
 
-Tại sao hai công thức có thể khác nhau? Với `n` luật khớp, phần điểm còn lại từ 1 của công thức cũ là `(1 − p)ⁿ × ∏(1 − cᵢ)`. Công thức mới dùng `(1 − p) × ∏(1 − cᵢ)`. Một luật khớp cho cùng kết quả. Hai luật khớp có thể làm điểm cũ cao hơn vì điểm ML đi vào hai lần. Gộp mới xử lý việc tính lặp điểm ML. Sự phụ thuộc giữa các luật Pima vẫn ảnh hưởng điểm luật. [Phân tích T09](T09_VALIDATION.md)
+Tại sao hai công thức có thể khác nhau? Với `n` luật khớp, phần điểm còn lại từ 1 của công thức cũ là `(1 − p)ⁿ × ∏(1 − cᵢ)`. Công thức mới dùng `(1 − p) × ∏(1 − cᵢ)`. Một luật khớp cho cùng kết quả. Hai luật khớp có thể làm điểm cũ cao hơn vì điểm ML đi vào hai lần. Gộp mới xử lý việc tính lặp điểm ML. Sự phụ thuộc giữa các luật Pima vẫn ảnh hưởng điểm luật. [Phân tích T09](../tasks/T09_VALIDATION.md)
 
 ## 6. Một ca từ đầu đến cuối
 
-Chọn **Tiểu đường · Pima** và nhập glucose OGTT **90**, BMI **26 kg/m²**, tuổi **45**. Đây là ca 5 tự tạo để minh họa trường hợp ML và luật bất đồng. [Kịch bản ca 5](T13_DEMO.md)
+Chọn **Tiểu đường · Pima** và nhập glucose OGTT **90**, BMI **26 kg/m²**, tuổi **45**. Đây là ca 5 tự tạo để minh họa trường hợp ML và luật bất đồng. [Kịch bản ca 5](../tasks/T13_DEMO.md)
 
 ### Trình duyệt và Flask trao đổi dữ liệu
 
@@ -179,7 +179,7 @@ Khi mở trang, GUI gọi `GET /api/diseases` để biết các trường đư�
 }
 ```
 
-Backend chấp nhận cả số JSON và chuỗi số hợp lệ. Tuổi phải là số nguyên. Từng khóa đầu vào phải có mặt. Một chỉ số chưa biết được gửi rõ là `null`. Ví dụ, `"bmi": null` là đã báo thiếu BMI, còn bỏ khóa `bmi` sẽ trả lỗi 400. Giá trị vô hạn, ngoài miền hoặc khóa lạ cũng bị từ chối. Nếu biểu mẫu hợp lệ mà artifact của bộ đang chọn chưa sẵn sàng, API trả 503. Cả lỗi 400 và 503 dừng trước khi lưu lịch sử. [Kiểm tra API](../app.py) · [Mã gửi form](../static/workspace.js)
+Backend chấp nhận cả số JSON và chuỗi số hợp lệ. Tuổi phải là số nguyên. Từng khóa đầu vào phải có mặt. Một chỉ số chưa biết được gửi rõ là `null`. Ví dụ, `"bmi": null` là đã báo thiếu BMI, còn bỏ khóa `bmi` sẽ trả lỗi 400. Giá trị vô hạn, ngoài miền hoặc khóa lạ cũng bị từ chối. Nếu biểu mẫu hợp lệ mà artifact của bộ đang chọn chưa sẵn sàng, API trả 503. Cả lỗi 400 và 503 dừng trước khi lưu lịch sử. [Kiểm tra API](../../medical_expert/web/app.py) · [Mã gửi form](../../medical_expert/web/static/workspace.js)
 
 ### Từng con số trong kết quả
 
@@ -192,9 +192,9 @@ Backend chấp nhận cả số JSON và chuỗi số hợp lệ. Tuổi phải 
 | **5. Hiển thị** | GUI đọc trace và làm tròn thành **14,3% ML**, **50,0% luật**, **57,1% kết hợp**. Mở “Giải thích kết quả” để xem chỉ số, fact và CF. |
 | **6. Lưu** | Flask ghi một hàng SQLite. Phần **Lịch sử** hiển thị **14,3%**, tức điểm ML trước khi gộp. |
 
-![GUI ca Pima 5. Cột bên trái có ba chỉ số. Cột phải hiển thị điểm ML, luật, kết hợp và trace.](demo/05-ml-bat-dong-luat.png)
+![GUI ca Pima 5. Cột bên trái có ba chỉ số. Cột phải hiển thị điểm ML, luật, kết hợp và trace.](../demo/05-ml-bat-dong-luat.png)
 
-Trong JSON trả về, `trace.target` là `pima`. `trace.ml` chứa tên và điểm mô hình. `trace.facts` giữ cả giá trị gốc, mức liên thuộc và trạng thái fact. `trace.fired_rules` ghi ID, danh sách tiền đề, CF và `used_in_fusion`. Cuối cùng `trace.result` chứa trạng thái luật, điểm luật, điểm kết hợp và nhãn. Với ô bị bỏ trống, trace cho biết giá trị thiếu ngay cả khi ML đã điền median để chạy được. Nếu bỏ trống cả ba, ML vẫn chạy bằng ba giá trị median. GUI ghi rõ số trường thật sự đã nhập. [Cấu trúc trace](../fusion.py) · [Cách GUI render](../static/workspace.js)
+Trong JSON trả về, `trace.target` là `pima`. `trace.ml` chứa tên và điểm mô hình. `trace.facts` giữ cả giá trị gốc, mức liên thuộc và trạng thái fact. `trace.fired_rules` ghi ID, danh sách tiền đề, CF và `used_in_fusion`. Cuối cùng `trace.result` chứa trạng thái luật, điểm luật, điểm kết hợp và nhãn. Với ô bị bỏ trống, trace cho biết giá trị thiếu ngay cả khi ML đã điền median để chạy được. Nếu bỏ trống cả ba, ML vẫn chạy bằng ba giá trị median. GUI ghi rõ số trường thật sự đã nhập. [Cấu trúc trace](../../medical_expert/expert/fusion.py) · [Cách GUI render](../../medical_expert/web/static/workspace.js)
 
 | Ca còn lại | Dùng để chứng minh |
 |---|---|
@@ -204,13 +204,13 @@ Trong JSON trả về, `trace.target` là `pima`. `trace.ml` chứa tên và đi
 | 4. Pima BMI 33, tuổi 45 | Cả hai luật khớp. Điểm luật `1 − (1 − 0,50) × (1 − 0,55) = 0,775`. Với ML `5/7`, gộp mới khoảng 0,9357 và đối chứng cũ khoảng 0,9816. |
 | 6. Cleveland cholesterol 900 | HTTP 400. GUI đánh dấu ô lỗi và lượt đó không được ghi. |
 
-Đầu vào đầy đủ, kết quả quan sát và ảnh cho cả sáu ca. [T13](T13_DEMO.md)
+Đầu vào đầy đủ, kết quả quan sát và ảnh cho cả sáu ca. [T13](../tasks/T13_DEMO.md)
 
 ## 7. Vận hành và kiểm tra
 
 ### Dựng môi trường và chạy GUI
 
-Chạy các lệnh từ thư mục gốc của repo. Python 3.12 và `uv` tạo môi trường. `requirements.txt` cố định phiên bản Flask, NumPy và các phụ thuộc. SQLite dùng thư viện chuẩn của Python. Node.js dùng để chạy test GUI với DOM giả lập. [Hướng dẫn cài đặt](../README.md)
+Chạy các lệnh từ thư mục gốc của repo. Python 3.12 và `uv` tạo môi trường. `requirements.txt` cố định phiên bản Flask, NumPy và các phụ thuộc. SQLite dùng thư viện chuẩn của Python. Node.js dùng để chạy test GUI với DOM giả lập. [Hướng dẫn cài đặt](../../README.md)
 
 ```bash
 uv venv --python 3.12 .venv
@@ -218,7 +218,7 @@ uv pip sync --python .venv/bin/python requirements.txt
 .venv/bin/python -B -m unittest discover -s tests -v
 ```
 
-Flask mặc định tìm `results/t06-cv-seed42/models.json`. Thư mục run nằm ngoài phần được theo dõi bằng Git, nên một bản clone mới cần tạo artifact T06. Nếu đã có artifact đúng, đi thẳng tới lệnh chạy Flask. Nếu thiếu, tải đúng bốn tệp nguồn theo hồ sơ và thay đường dẫn ví dụ dưới đây. Lệnh train từ chối ghi đè run có sẵn. [Nguồn và lệnh huấn luyện](../README.md)
+Flask mặc định tìm `results/t06-cv-seed42/models.json`. Thư mục run nằm ngoài phần được theo dõi bằng Git, nên một bản clone mới cần tạo artifact T06. Nếu đã có artifact đúng, đi thẳng tới lệnh chạy Flask. Nếu thiếu, tải đúng bốn tệp nguồn theo hồ sơ và thay đường dẫn ví dụ dưới đây. Lệnh train từ chối ghi đè run có sẵn. [Nguồn và lệnh huấn luyện](../../README.md)
 
 ```bash
 .venv/bin/python -B -m scripts.train --dataset all --seed 42 \
@@ -239,11 +239,11 @@ MEDICAL_HISTORY_DB="$demo_db_dir/history.sqlite" \
 
 ### Tệp nào chứa lịch sử?
 
-`MEDICAL_HISTORY_DB` được đọc khi ứng dụng khởi động. Nếu biến này trỏ tới `/tmp/.../history.sqlite`, các lượt ở cửa sổ GUI đó nằm trong tệp tạm. Nếu bỏ biến, mặc định là `medical_history.db` tương đối với **thư mục chạy**. Chạy lại dòng `mktemp -d` sẽ tạo một thư mục mới. Để dùng lại lịch sử, giữ cùng đường dẫn SQLite giữa các lần khởi động. Số cổng chỉ dùng để truy cập máy chủ. Với nhu cầu lưu lâu, có thể đặt rõ `MEDICAL_HISTORY_DB="$PWD/medical_history.db"` khi chạy từ gốc repo. [Cấu hình SQLite](../app.py) · [Ví dụ demo với SQLite riêng](T13_DEMO.md)
+`MEDICAL_HISTORY_DB` được đọc khi ứng dụng khởi động. Nếu biến này trỏ tới `/tmp/.../history.sqlite`, các lượt ở cửa sổ GUI đó nằm trong tệp tạm. Nếu bỏ biến, mặc định là `medical_history.db` tương đối với **thư mục chạy**. Chạy lại dòng `mktemp -d` sẽ tạo một thư mục mới. Để dùng lại lịch sử, giữ cùng đường dẫn SQLite giữa các lần khởi động. Số cổng chỉ dùng để truy cập máy chủ. Với nhu cầu lưu lâu, có thể đặt rõ `MEDICAL_HISTORY_DB="$PWD/medical_history.db"` khi chạy từ gốc repo. [Cấu hình SQLite](../../medical_expert/web/app.py) · [Ví dụ demo với SQLite riêng](../tasks/T13_DEMO.md)
 
 - Bảng `history` giữ ID, nhóm bệnh, chỉ số dạng text, điểm ML thang 0–1, mức cũ dựa trên ML, mô tả luật và thời gian UTC. Bảng hiện lưu điểm ML. Trace đầy đủ và điểm kết hợp được trả về cho lượt đang xem.
 - `GET /api/history` trả tối đa 10 lượt mới nhất theo timestamp rồi ID. Có thể xem toàn bộ các hàng của tệp đang dùng bằng cách mở đúng tệp trong trình xem SQLite như DBeaver.
-- Việc tạo bảng dùng `CREATE TABLE IF NOT EXISTS`. Dữ liệu qua lần khởi động được kiểm tra bằng SQLite tạm trong các test T01. Một yêu cầu lỗi không làm tăng số hàng. [API và ghi lịch sử](../app.py) · [Test SQLite](../tests/test_history.py)
+- Việc tạo bảng dùng `CREATE TABLE IF NOT EXISTS`. Dữ liệu qua lần khởi động được kiểm tra bằng SQLite tạm trong các test T01. Một yêu cầu lỗi không làm tăng số hàng. [API và ghi lịch sử](../../medical_expert/web/app.py) · [Test SQLite](../../tests/test_history.py)
 
 ### Nếu giao diện báo lỗi
 
@@ -255,7 +255,7 @@ MEDICAL_HISTORY_DB="$demo_db_dir/history.sqlite" \
 | Điểm trong lịch sử khác điểm lớn trên kết quả | Lịch sử đọc `ml_prob`. Điểm lớn là điểm kết hợp cho lượt hiện tại. Dùng ca Pima ở phần 6 để tự kiểm tra hai số. |
 | Thiếu kết quả khi mở từ kho Git | Tệp nguồn và run T06/T09/T10 được giữ cục bộ. Manifest, khóa cấu hình và tóm tắt kết quả nằm trong repo. |
 
-Các test tự động bao phủ loader, chia dữ liệu, fit tiền xử lý, công thức metric, luật, phép gộp, validate API và SQLite. Test Node kiểm tra render trace, còn ca Chrome kiểm tra các phần đó hoạt động cùng nhau từ form thật. Kiểm tra dữ liệu đánh giá dựa trên cấu hình khóa, metric và checksum của đầu ra đã lưu. [Nhật ký nghiệm thu](STATUS.md)
+Các test tự động bao phủ loader, chia dữ liệu, fit tiền xử lý, công thức metric, luật, phép gộp, validate API và SQLite. Test Node kiểm tra render trace, còn ca Chrome kiểm tra các phần đó hoạt động cùng nhau từ form thật. Kiểm tra dữ liệu đánh giá dựa trên cấu hình khóa, metric và checksum của đầu ra đã lưu. [Nhật ký nghiệm thu](../STATUS.md)
 
 ## 8. Kết quả và cách diễn giải
 
@@ -264,13 +264,13 @@ Các test tự động bao phủ loader, chia dữ liệu, fit tiền xử lý, 
 - **TP** là ca dương đoán đúng, **TN** là ca âm đoán đúng, **FP** là ca âm bị báo dương và **FN** là ca dương bị bỏ sót.
 - **Accuracy** là tỷ lệ ca dự đoán đúng. **Precision** trả lời trong các ca báo dương, có bao nhiêu ca thật sự dương. **Recall** trả lời trong các ca dương thật, tìm được bao nhiêu ca. **F1 dương** là `2TP / (2TP + FP + FN)`.
 - **ROC-AUC** xem một ca dương được xếp điểm cao hơn một ca âm thường xuyên đến mức nào trên mọi cặp âm–dương. Hai điểm bằng nhau được tính nửa điểm. ROC-AUC dùng trực tiếp điểm hỗ trợ. Ma trận nhầm lẫn, precision, recall và F1 dùng nhãn tại ngưỡng 0,5.
-- Metric thiếu định nghĩa được để trống trong CSV, với nguyên nhân trong metadata. Ví dụ, precision thiếu khi mô hình chưa từng báo dương. [Mã metric](../experiment_metrics.py)
+- Metric thiếu định nghĩa được để trống trong CSV, với nguyên nhân trong metadata. Ví dụ, precision thiếu khi mô hình chưa từng báo dương. [Mã metric](../../medical_expert/ml/metrics.py)
 
 ### T09 kiểm tra phép đối chứng trước, T10 đánh giá sau khóa
 
-T09 ghép OOF của mô hình đã chọn với fact gốc của cùng ID. F1 trong T09 được tính trên **toàn bộ dự đoán OOF đã ghép**. F1 dùng để chọn mô hình ở T06 là **trung bình của năm F1 theo fold**. Hai số có thể chênh một chút do phép tính khác nhau. T09 kiểm tra độ bao phủ, quy tắc bỏ ngỏ và hai cách gộp trước khi mở holdout. [T09](T09_VALIDATION.md)
+T09 ghép OOF của mô hình đã chọn với fact gốc của cùng ID. F1 trong T09 được tính trên **toàn bộ dự đoán OOF đã ghép**. F1 dùng để chọn mô hình ở T06 là **trung bình của năm F1 theo fold**. Hai số có thể chênh một chút do phép tính khác nhau. T09 kiểm tra độ bao phủ, quy tắc bỏ ngỏ và hai cách gộp trước khi mở holdout. [T09](../tasks/T09_VALIDATION.md)
 
-Khóa T10 lưu hash tệp nguồn, tệp phương pháp, manifest, artifact và dự đoán CV, metadata T09, mô hình đã chọn, tham số, luật và ngưỡng. Lệnh đánh giá kiểm tra bằng chứng khóa trước khi chấm, tạo thư mục run mới và từ chối ghi đè kết quả có sẵn. Commit khóa là `0f79c31`. Báo cáo này đọc metric đã xuất và đối chiếu khóa cùng checksum hai CSV T10. [Khóa T10](t10_lock.json) · [Mã đánh giá](../scripts/evaluate.py) · [Kết quả đã công bố](T10_HOLDOUT.md)
+Khóa T10 lưu hash tệp nguồn, tệp phương pháp, manifest, artifact và dự đoán CV, metadata T09, mô hình đã chọn, tham số, luật và ngưỡng. Lệnh đánh giá kiểm tra bằng chứng khóa trước khi chấm, tạo thư mục run mới và từ chối ghi đè kết quả có sẵn. Commit khóa là `0f79c31`. Báo cáo này đọc metric đã xuất và đối chiếu khóa cùng checksum hai CSV T10. [Khóa T10](../../manifests/t10_lock.json) · [Mã đánh giá](../../scripts/evaluate.py) · [Kết quả đã công bố](../tasks/T10_HOLDOUT.md)
 
 ### Holdout của mô hình ML đã chọn
 
@@ -281,7 +281,7 @@ Khóa T10 lưu hash tệp nguồn, tệp phương pháp, manifest, artifact và 
 | ILPD · Logistic Regression | 114 | 0,7281 | 0,7358 | 0,9630 | 0,8342 | 0,6330 | 0,8308 | 5 / 28 / 3 / 78 |
 | CKD · Decision Tree | 80 | 0,8750 | 0,9762 | 0,8200 | 0,8913 | 0,8893 | 0,7692 | 29 / 1 / 9 / 41 |
 
-Cleveland xếp hạng gần mức ngẫu nhiên trên 61 ca. Pima có AUC 0,7480 và bỏ sót 30/54 ca dương ở ngưỡng 0,5. ILPD có F1 dương cao nhưng chỉ nhận đúng 5/33 ca âm, nên F1 chỉ nhỉnh hơn baseline luôn đoán dương. CKD đạt F1 0,8913 trên 80 ca, còn 9/50 ca dương bị bỏ sót. Các bộ dùng nhãn và quần thể khác nhau. [CSV tổng hợp T10 cục bộ](../results/t10-test-seed42/metrics.csv) · [Bảng tóm tắt T10](T10_HOLDOUT.md)
+Cleveland xếp hạng gần mức ngẫu nhiên trên 61 ca. Pima có AUC 0,7480 và bỏ sót 30/54 ca dương ở ngưỡng 0,5. ILPD có F1 dương cao nhưng chỉ nhận đúng 5/33 ca âm, nên F1 chỉ nhỉnh hơn baseline luôn đoán dương. CKD đạt F1 0,8913 trên 80 ca, còn 9/50 ca dương bị bỏ sót. Các bộ dùng nhãn và quần thể khác nhau. [CSV tổng hợp T10 cục bộ](../../results/t10-test-seed42/metrics.csv) · [Bảng tóm tắt T10](../tasks/T10_HOLDOUT.md)
 
 ### Phép so sánh 1 · Thêm luật vào ML
 
@@ -292,11 +292,11 @@ Cleveland xếp hạng gần mức ngẫu nhiên trên 61 ca. Pima có AUC 0,748
 | T10 holdout · Cleveland | 27/61 | 0,5000 → 0,6129 | 14 → 9 | 14 → 15 |
 | T10 holdout · Pima | 50/154 | 0,4948 → 0,6400 | 30 → 14 | 19 → 31 |
 
-Cả hai giai đoạn đều ghi nhận **ít bỏ sót ca dương hơn và nhiều ca âm bị báo dương hơn** khi thêm luật. Mức thay đổi F1 phụ thuộc tập đánh giá. Chẳng hạn Pima tăng F1 trên holdout, còn trên OOF giảm nhẹ. Trong vùng được bao phủ của holdout, chỉ luật dự đoán dương cho mọi ca, gồm 12/12 ca âm Cleveland và 18/18 ca âm Pima. Recall 1,0 của luật trong vùng đó cần đọc kèm các FP và độ bao phủ. [CSV T09 cục bộ](../results/t09-validation-seed42/metrics.csv) · [Phân tích T12](T12_ERROR_ANALYSIS.md)
+Cả hai giai đoạn đều ghi nhận **ít bỏ sót ca dương hơn và nhiều ca âm bị báo dương hơn** khi thêm luật. Mức thay đổi F1 phụ thuộc tập đánh giá. Chẳng hạn Pima tăng F1 trên holdout, còn trên OOF giảm nhẹ. Trong vùng được bao phủ của holdout, chỉ luật dự đoán dương cho mọi ca, gồm 12/12 ca âm Cleveland và 18/18 ca âm Pima. Recall 1,0 của luật trong vùng đó cần đọc kèm các FP và độ bao phủ. [CSV T09 cục bộ](../../results/t09-validation-seed42/metrics.csv) · [Phân tích T12](../tasks/T12_ERROR_ANALYSIS.md)
 
 ### Phép so sánh 2 · Gộp cũ và gộp mới
 
-Cleveland có một luật đích nên hai công thức trùng điểm. Trên 154 ca holdout Pima, 38 ca có điểm khác. Gộp mới thấp hơn gộp cũ trung bình khoảng **1,20 điểm phần trăm** trên toàn tập, chênh tuyệt đối lớn nhất **5,51 điểm phần trăm**. Cả hai bộ có **0 ca đổi nhãn** giữa hai cách gộp. Các luật đích trong cấu hình này có CF từ 0,5, nên khi một luật khớp thì cả hai cách đã đạt ngưỡng dương. Phép gộp mới thay đổi mức điểm và đôi khi thứ hạng, còn kết quả phân lớp ở ngưỡng đã khóa giống nhau. [Đối chứng](T09_VALIDATION.md) · [Phân tích lỗi](T12_ERROR_ANALYSIS.md)
+Cleveland có một luật đích nên hai công thức trùng điểm. Trên 154 ca holdout Pima, 38 ca có điểm khác. Gộp mới thấp hơn gộp cũ trung bình khoảng **1,20 điểm phần trăm** trên toàn tập, chênh tuyệt đối lớn nhất **5,51 điểm phần trăm**. Cả hai bộ có **0 ca đổi nhãn** giữa hai cách gộp. Các luật đích trong cấu hình này có CF từ 0,5, nên khi một luật khớp thì cả hai cách đã đạt ngưỡng dương. Phép gộp mới thay đổi mức điểm và đôi khi thứ hạng, còn kết quả phân lớp ở ngưỡng đã khóa giống nhau. [Đối chứng](../tasks/T09_VALIDATION.md) · [Phân tích lỗi](../tasks/T12_ERROR_ANALYSIS.md)
 
 ### Ba mẫu đọc lỗi từ T12
 
@@ -306,7 +306,7 @@ Cleveland có một luật đích nên hai công thức trùng điểm. Trên 15
 | `pima:0077` | 0 | 0 | 1 | Luật tạo một ca dương giả. |
 | `pima:0016` | 1 | 0 | 0 | Luật bỏ ngỏ và ca vẫn bị bỏ sót. |
 
-Các ID này dẫn tới dự đoán đã xuất để phân tích lỗi. Sáu ca thao tác GUI dùng fixture tự tạo. Phần T12 còn có hệ số Logistic Regression. Ví dụ hệ số glucose Pima là `+1,136`, ứng với odds lớp dương nhân khoảng 3,12 khi glucose tăng một độ lệch chuẩn train và các đặc trưng khác giữ nguyên trong mô hình Logistic. Đây là kết quả của mô hình đối chiếu để minh họa hệ số. Ứng dụng chọn KNN cho Pima. [Ca sai và biểu đồ hệ số](T12_ERROR_ANALYSIS.md)
+Các ID này dẫn tới dự đoán đã xuất để phân tích lỗi. Sáu ca thao tác GUI dùng fixture tự tạo. Phần T12 còn có hệ số Logistic Regression. Ví dụ hệ số glucose Pima là `+1,136`, ứng với odds lớp dương nhân khoảng 3,12 khi glucose tăng một độ lệch chuẩn train và các đặc trưng khác giữ nguyên trong mô hình Logistic. Đây là kết quả của mô hình đối chiếu để minh họa hệ số. Ứng dụng chọn KNN cho Pima. [Ca sai và biểu đồ hệ số](../tasks/T12_ERROR_ANALYSIS.md)
 
 ## 9. Giới hạn và hướng tự cải thiện
 
@@ -318,6 +318,6 @@ Các ID này dẫn tới dự đoán đã xuất để phân tích lỗi. Sáu c
 | CKD chỉ nhận huyết áp 90–200 mmHg trên form. Median train là 80 mmHg. Sau khi điền thiếu, 247/320 giá trị train nằm ngoài miền này. | Rà soát schema thật bằng thống kê train, tách quan sát gốc khỏi giá trị đã điền trước khi đề xuất miền mới. Đây là độ phủ của form. T10 đọc tệp nguồn qua loader. |
 | Phần lịch sử lưu ML và mô tả luật. Điểm kết hợp xem trong trace lượt hiện tại. | Khi demo, mở ca Pima 5 để đối chiếu hai số. Nếu cần xem lại toàn bộ trace lịch sử ở một phiên bản sau, đặc tả schema lưu trước và giữ tương thích với DB cũ. |
 
-Nguồn giới hạn và thứ tự ưu tiên. [Review và hướng tự cải thiện](REVIEW.md) · [Quy định dự án](../AGENTS.md)
+Nguồn giới hạn và thứ tự ưu tiên. [Review và hướng tự cải thiện](../REVIEW.md) · [Quy định dự án](../../AGENTS.md)
 
 **Tự kiểm tra đã nắm dự án.** Giải thích vì sao Flask vẫn chạy khi bỏ trống BMI, vì sao luật có thể bỏ ngỏ trong cùng ca, vì sao T06 chọn Logistic Regression cho ILPD dù baseline CV có F1 cao hơn, và vì sao lịch sử ca Pima 5 ghi 14,3% khi GUI báo 57,1%. Nếu trả lời được cả bốn câu bằng pipeline và các bảng phía trên, bạn có thể tự dẫn từ dữ liệu đầu vào tới kết quả và bằng chứng trong báo cáo.
